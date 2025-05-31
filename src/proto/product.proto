@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package product;
+
+service ProductService {
+  rpc CreateProduct (CreateProductRequest) returns (ProductResponse);
+  rpc UpdateProduct (UpdateProductRequest) returns (ProductResponse);
+  rpc GetProduct (ProductID) returns (ProductResponse);
+  rpc ListProducts (ProductFilter) returns (ProductListResponse);
+}
+
+message CreateProductRequest {
+  string name = 1;
+  string categoryName = 2;
+  string brand = 3;
+  string imageUrl = 4;
+  string description = 5;
+  double price = 6;
+  int32 totalStock = 7;
+  repeated Variant variants = 8;
+}
+
+message UpdateProductRequest {
+  string id = 1;
+  optional string name = 2;
+  optional string categoryName = 3;
+  optional string brand = 4;
+  optional string imageUrl = 5;
+  optional string description = 6;
+  optional double price = 7;
+  repeated Variant variants = 8;
+}
+
+message Variant {
+  string size = 1;
+  string color = 2;
+  int32 stock = 3;
+}
+
+message ProductID {
+  string id = 1;
+}
+
+message ProductFilter {
+  int32 page = 1;
+  int32 pageSize = 2;
+  string categoryName = 3;
+  string brand = 4;
+}
+
+message ProductResponse {
+  string id = 1;
+  string name = 2;
+  string categoryName = 3;
+  string brand = 4;
+  string imageUrl = 5;
+  string description = 6;
+  double price = 7;
+  int32 totalStock = 8;
+  repeated VariantResponse variants = 10;
+}
+
+message ProductListResponse {
+  repeated ProductResponse products = 1;
+  int32 total = 2;
+  int32 page = 3;
+  int32 pageSize = 4;
+}
+
+message VariantResponse {
+  string id = 1;
+  string size = 2;
+  string color = 3;
+  int32 stock = 4;
+}
