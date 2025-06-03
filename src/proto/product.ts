@@ -86,6 +86,16 @@ export interface VariantResponse {
   stock: number;
 }
 
+export interface UpdateInventoryRequest {
+  productId: string;
+  variants: Variant[];
+}
+
+export interface DeleteProductResponse {
+  success: boolean;
+  message: string;
+}
+
 function createBaseCreateProductRequest(): CreateProductRequest {
   return {
     name: "",
@@ -1124,6 +1134,158 @@ export const VariantResponse: MessageFns<VariantResponse> = {
   },
 };
 
+function createBaseUpdateInventoryRequest(): UpdateInventoryRequest {
+  return { productId: "", variants: [] };
+}
+
+export const UpdateInventoryRequest: MessageFns<UpdateInventoryRequest> = {
+  encode(message: UpdateInventoryRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.productId !== "") {
+      writer.uint32(10).string(message.productId);
+    }
+    for (const v of message.variants) {
+      Variant.encode(v!, writer.uint32(18).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateInventoryRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateInventoryRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.productId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.variants.push(Variant.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateInventoryRequest {
+    return {
+      productId: isSet(object.productId) ? globalThis.String(object.productId) : "",
+      variants: globalThis.Array.isArray(object?.variants) ? object.variants.map((e: any) => Variant.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: UpdateInventoryRequest): unknown {
+    const obj: any = {};
+    if (message.productId !== "") {
+      obj.productId = message.productId;
+    }
+    if (message.variants?.length) {
+      obj.variants = message.variants.map((e) => Variant.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<UpdateInventoryRequest>): UpdateInventoryRequest {
+    return UpdateInventoryRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<UpdateInventoryRequest>): UpdateInventoryRequest {
+    const message = createBaseUpdateInventoryRequest();
+    message.productId = object.productId ?? "";
+    message.variants = object.variants?.map((e) => Variant.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDeleteProductResponse(): DeleteProductResponse {
+  return { success: false, message: "" };
+}
+
+export const DeleteProductResponse: MessageFns<DeleteProductResponse> = {
+  encode(message: DeleteProductResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.success !== false) {
+      writer.uint32(8).bool(message.success);
+    }
+    if (message.message !== "") {
+      writer.uint32(18).string(message.message);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteProductResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteProductResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.success = reader.bool();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.message = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteProductResponse {
+    return {
+      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
+      message: isSet(object.message) ? globalThis.String(object.message) : "",
+    };
+  },
+
+  toJSON(message: DeleteProductResponse): unknown {
+    const obj: any = {};
+    if (message.success !== false) {
+      obj.success = message.success;
+    }
+    if (message.message !== "") {
+      obj.message = message.message;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<DeleteProductResponse>): DeleteProductResponse {
+    return DeleteProductResponse.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<DeleteProductResponse>): DeleteProductResponse {
+    const message = createBaseDeleteProductResponse();
+    message.success = object.success ?? false;
+    message.message = object.message ?? "";
+    return message;
+  },
+};
+
 export type ProductServiceService = typeof ProductServiceService;
 export const ProductServiceService = {
   createProduct: {
@@ -1162,6 +1324,24 @@ export const ProductServiceService = {
     responseSerialize: (value: ProductListResponse) => Buffer.from(ProductListResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer) => ProductListResponse.decode(value),
   },
+  deleteProduct: {
+    path: "/product.ProductService/DeleteProduct",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ProductID) => Buffer.from(ProductID.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => ProductID.decode(value),
+    responseSerialize: (value: DeleteProductResponse) => Buffer.from(DeleteProductResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => DeleteProductResponse.decode(value),
+  },
+  updateInventory: {
+    path: "/product.ProductService/UpdateInventory",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: UpdateInventoryRequest) => Buffer.from(UpdateInventoryRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => UpdateInventoryRequest.decode(value),
+    responseSerialize: (value: ProductResponse) => Buffer.from(ProductResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => ProductResponse.decode(value),
+  },
 } as const;
 
 export interface ProductServiceServer extends UntypedServiceImplementation {
@@ -1169,6 +1349,8 @@ export interface ProductServiceServer extends UntypedServiceImplementation {
   updateProduct: handleUnaryCall<UpdateProductRequest, ProductResponse>;
   getProduct: handleUnaryCall<ProductID, ProductResponse>;
   listProducts: handleUnaryCall<ProductFilter, ProductListResponse>;
+  deleteProduct: handleUnaryCall<ProductID, DeleteProductResponse>;
+  updateInventory: handleUnaryCall<UpdateInventoryRequest, ProductResponse>;
 }
 
 export interface ProductServiceClient extends Client {
@@ -1231,6 +1413,36 @@ export interface ProductServiceClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: ProductListResponse) => void,
+  ): ClientUnaryCall;
+  deleteProduct(
+    request: ProductID,
+    callback: (error: ServiceError | null, response: DeleteProductResponse) => void,
+  ): ClientUnaryCall;
+  deleteProduct(
+    request: ProductID,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: DeleteProductResponse) => void,
+  ): ClientUnaryCall;
+  deleteProduct(
+    request: ProductID,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: DeleteProductResponse) => void,
+  ): ClientUnaryCall;
+  updateInventory(
+    request: UpdateInventoryRequest,
+    callback: (error: ServiceError | null, response: ProductResponse) => void,
+  ): ClientUnaryCall;
+  updateInventory(
+    request: UpdateInventoryRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ProductResponse) => void,
+  ): ClientUnaryCall;
+  updateInventory(
+    request: UpdateInventoryRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ProductResponse) => void,
   ): ClientUnaryCall;
 }
 

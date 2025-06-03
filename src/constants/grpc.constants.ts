@@ -9,5 +9,9 @@ export const grpcMethods = {
 
     get: 'GetProduct',
 
-    getList: 'ListProducts'
+    getList: 'ListProducts',
+
+    delete: 'DeleteProduct',
+
+    updateVariants :   'UpdateInventory'
 }

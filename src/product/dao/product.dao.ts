@@ -1,11 +1,10 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
-import { GrpcException } from "src/filters/exceptions/grpc.exception";
+import { Model, Types } from "mongoose";
 import { Product } from "src/product/schema/product.schema";
 import { Variant } from "src/product/schema/variant.schema";
-import { CreateProductRequest, UpdateProductRequest } from "src/proto/product";
-import { status } from '@grpc/grpc-js';
+import { CreateProductRequest, UpdateInventoryRequest, UpdateProductRequest } from "src/proto/product";
+import { GrpcNotFoundException } from "src/filters/custom-exceptions";
 
 
 @Injectable()
@@ -45,18 +44,15 @@ export class productDao {
             data.id,
             { $set: updatePayload },
             { new: true }
-        );
+        )
             
         if (!updatedProduct) {
-            throw new GrpcException(
-                status.NOT_FOUND,
-                'Product not found',
-                { productId: data.id }
-            )
+            throw new GrpcNotFoundException('Product not found in updating the product');
         }
         
         if(data.variants && data.variants.length > 0) {
-            await this.variantModel.deleteMany({ productId: data.id });
+            const productObjectId = new Types.ObjectId(data.id);
+            await this.variantModel.deleteMany({ productId: productObjectId });
         
             const variants = await Promise.all(
                 data.variants.map(v => 
@@ -73,6 +69,7 @@ export class productDao {
         return updatedProduct;
     }
 
+    // Get Product By Id
     async getProductDao(id : string) : Promise<Product> {
         const product = await this.productModel.findById(id)
             .populate('variants')
@@ -80,11 +77,7 @@ export class productDao {
             .exec();
   
         if (!product) {
-            throw new GrpcException(
-                status.NOT_FOUND,
-                'Product not found',
-                { productId: id }
-            )
+            throw new GrpcNotFoundException(`Product not found with ID${id}`);
         }
         return product;
     }
@@ -114,4 +107,61 @@ export class productDao {
 
         return { products, total };
     }
+
+    // deleting the product with variants by id
+    async deleteProductDao(id: string ) {
+        const productObjectId = new Types.ObjectId(id);
+        
+        await this.variantModel.deleteMany({ 
+            productId: productObjectId 
+        });
+
+        const result = await this.productModel.findByIdAndDelete(id);
+
+        if(!result) {
+            throw new GrpcNotFoundException(`Product Not Found with ID:${id}`);
+        }
+        
+        return {
+            success: true,
+            message: `Product ${id} deleted successfully`
+        };
+    }
+
+    // Updating the stocks with productId
+    async updateVariantsDao(data: UpdateInventoryRequest){
+        const productObjectId = new Types.ObjectId(data.productId);
+        console.log(data.productId, productObjectId);
+        const productExists = await this.productModel.exists({ _id: productObjectId });
+
+        if (!productExists) {
+            throw new GrpcNotFoundException(`Product Not Found with ID: ${productObjectId}`);
+        }
+
+        // deleting the previous variants 
+        await this.variantModel.deleteMany({ productId: productObjectId });
+
+        const variants = await Promise.all(
+            data.variants.map(v => 
+                this.variantModel.create({
+                size: v.size,
+                color: v.color,
+                stock: v.stock,
+                productId: productObjectId
+                })
+            )
+        );
+        
+        const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
+
+        // Update product's total stock and get updated document
+        const updatedProduct = await this.productModel.findByIdAndUpdate(
+            productObjectId,
+            { totalStock },
+            { new: true }
+        ).populate('variants');
+        
+        return updatedProduct;
+    }
+            
 }

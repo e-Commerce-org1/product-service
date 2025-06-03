@@ -5,7 +5,7 @@ import { packageName } from './constants/grpc.constants';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import { GrpcExceptionFilter } from './filters/grpc-exception.filter';
-import { WinstonModule } from 'nest-winston';
+import { WINSTON_MODULE_NEST_PROVIDER, WinstonModule } from 'nest-winston';
 import { winstonConfig } from './logger/winston.logger';
 dotenv.config();
 
@@ -15,17 +15,21 @@ async function bootstrap() {
   });
 
   // gRPC microservice setup
+  const grpcPort = process.env.GRPC_SERVER_URL;
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
       package: packageName,
       protoPath: join(__dirname, './proto/product.proto'),
-      url: process.env.GRPC_SERVER_URL
+      url: grpcPort
     }
   });
-  
+
   await app.startAllMicroservices();
   app.useGlobalFilters(new GrpcExceptionFilter());
   
+  const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
+  logger.log(`Grpc Service is running on: http://localhost:${grpcPort}`, 'Bootstrap');
+  logger.log(`Database is connected to ${process.env.MONGODB_URI}`, 'Bootstrap');
 }
 bootstrap();

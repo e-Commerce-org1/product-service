@@ -4,7 +4,7 @@ import { Product } from './product.schema';
 
 @Schema({ timestamps: true })
 export class Variant extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Product', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Product', required: true, index: true })
   productId: Product;
 
   @Prop({ required: true, index: true })

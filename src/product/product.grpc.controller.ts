@@ -1,7 +1,6 @@
-import { Controller, ForbiddenException } from '@nestjs/common';
-import { GrpcMethod, RpcException } from '@nestjs/microservices';
+import { Controller } from '@nestjs/common';
+import { GrpcMethod } from '@nestjs/microservices';
 import { ProductService } from './product.service';
-import { status } from '@grpc/grpc-js';
 import { grpcService, grpcMethods } from '../constants/grpc.constants'
 import { 
   CreateProductRequest,
@@ -9,8 +8,10 @@ import {
   ProductID,
   ProductFilter,
   ProductResponse,
-  ProductListResponse
+  ProductListResponse,
+  UpdateInventoryRequest
 } from '../proto/product';
+import { GrpcNotFoundException } from 'src/filters/custom-exceptions';
 
 @Controller()
 export class ProductGrpcController {
@@ -33,10 +34,7 @@ export class ProductGrpcController {
   async getProduct(data: ProductID): Promise<ProductResponse> {
     const product = await this.productService.getProduct(data.id);
     if (!product) {
-      throw new RpcException({
-        code: status.NOT_FOUND,
-        message: 'Product not found'
-      });
+      throw new GrpcNotFoundException('Product not found');
     }
     return this.productService.mapToResponse(product);
   }
@@ -50,5 +48,15 @@ export class ProductGrpcController {
       page: result.page || 1,
       pageSize: result.pageSize || 10
     };
+  }
+
+  @GrpcMethod(grpcService, grpcMethods.delete)
+  async deleteProduct(data: { id: string }) {
+    return this.productService.deleteProduct(data);
+  }
+
+  @GrpcMethod(grpcService, grpcMethods.updateVariants)
+  async updateVariants(data: UpdateInventoryRequest) {
+    return this.productService.updateVariants(data);
   }
 }

@@ -5,12 +5,13 @@ import {
   CreateProductRequest,
   UpdateProductRequest,
   ProductResponse,
-  ProductListResponse
+  ProductListResponse,
+  DeleteProductResponse,
+  UpdateInventoryRequest
 } from '../proto/product';
-import { GrpcException } from 'src/filters/exceptions/grpc.exception';
-import { status } from '@grpc/grpc-js';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { GrpcBadRequestException, GrpcNotFoundException } from 'src/filters/custom-exceptions';
 
 @Injectable()
 export class ProductService {
@@ -25,11 +26,7 @@ export class ProductService {
       return newProduct;
     }catch(error){
       this.logger.error('Failed to create product',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcException(
-        status.INTERNAL,
-        'Failed to create product',
-        { data }
-      )
+      throw new GrpcBadRequestException('Failed to create product')
     }
     
   }
@@ -39,11 +36,7 @@ export class ProductService {
       return this.productDao.updateProductDao(data);
     } catch (error) {
       this.logger.error('Failed to update product',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcException(
-        status.INTERNAL,
-        'Failed to update product',
-        { data }
-      )
+      throw new GrpcBadRequestException('Failed to update product');
     }
     
   }
@@ -53,11 +46,7 @@ export class ProductService {
       return this.productDao.getProductDao(id);
     } catch(error) {
       this.logger.error('Failed to get product',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcException(
-        status.INTERNAL,
-        'Failed to get product',
-        { productId : id}
-      )
+      throw new GrpcNotFoundException( 'Failed to get product')
     }
   }
 
@@ -75,11 +64,25 @@ export class ProductService {
       };
     } catch (error) {
       this.logger.error('Failed to create product',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcException(
-        status.INVALID_ARGUMENT,
-        'Failed to list Products',
-        { filter }
-      )
+      throw new GrpcBadRequestException('Failed to list Products')
+    }
+  }
+
+
+  async deleteProduct(data: { id: string }): Promise<DeleteProductResponse> {
+    try {
+      return this.productDao.deleteProductDao(data.id);
+    } catch (error) {
+      throw new GrpcBadRequestException(`Product Not Deleted with ID${data.id}`);
+    }
+  }
+
+  async updateVariants(data: UpdateInventoryRequest): Promise<ProductResponse> {
+    try {
+      const updatedProduct = await this.productDao.updateVariantsDao(data);
+      return this.mapToResponse(updatedProduct);
+    } catch (error) {
+      throw new GrpcBadRequestException('Variants not Updated Some Issues');
     }
     
   }
