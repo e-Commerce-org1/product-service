@@ -64,6 +64,7 @@ export class productDao {
             )
         
             updatedProduct.totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
+            updatedProduct.variants = variants;
             await updatedProduct.save();
         }
         return updatedProduct;
@@ -131,10 +132,10 @@ export class productDao {
     // Updating the stocks with productId
     async updateVariantsDao(data: UpdateInventoryRequest){
         const productObjectId = new Types.ObjectId(data.productId);
-        console.log(data.productId, productObjectId);
-        const productExists = await this.productModel.exists({ _id: productObjectId });
-
-        if (!productExists) {
+        // console.log(data.productId, productObjectId);
+        const product = await this.productModel.findById({ _id: productObjectId });
+        // console.log(product);
+        if (!product) {
             throw new GrpcNotFoundException(`Product Not Found with ID: ${productObjectId}`);
         }
 
@@ -151,17 +152,10 @@ export class productDao {
                 })
             )
         );
+        product.variants = variants;
+        product.totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
         
-        const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
-
-        // Update product's total stock and get updated document
-        const updatedProduct = await this.productModel.findByIdAndUpdate(
-            productObjectId,
-            { totalStock },
-            { new: true }
-        ).populate('variants');
-        
-        return updatedProduct;
+        return product.save();
     }
             
 }
