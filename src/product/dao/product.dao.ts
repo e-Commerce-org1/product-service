@@ -113,20 +113,17 @@ export class productDao {
     async deleteProductDao(id: string ) {
         const productObjectId = new Types.ObjectId(id);
         
+        const result = await this.productModel.findByIdAndDelete(id);
+        console.log("result------>", result);
+        if(!result) {
+            throw new GrpcNotFoundException(`In delete, Product Not Found with ID:${id}`);
+        }
+
         await this.variantModel.deleteMany({ 
             productId: productObjectId 
         });
-
-        const result = await this.productModel.findByIdAndDelete(id);
-
-        if(!result) {
-            throw new GrpcNotFoundException(`Product Not Found with ID:${id}`);
-        }
         
-        return {
-            success: true,
-            message: `Product ${id} deleted successfully`
-        };
+        return result || "Not Found";
     }
 
     // Updating the stocks with productId

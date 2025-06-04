@@ -3,12 +3,20 @@ syntax = "proto3";
 package product;
 
 service ProductService {
-  rpc CreateProduct (CreateProductRequest) returns (ProductResponse);
-  rpc UpdateProduct (UpdateProductRequest) returns (ProductResponse);
-  rpc GetProduct (ProductID) returns (ProductResponse);
-  rpc ListProducts (ProductFilter) returns (ProductListResponse);
-  rpc DeleteProduct (ProductID) returns (DeleteProductResponse);
-  rpc UpdateInventory (UpdateInventoryRequest) returns (ProductResponse);
+  rpc CreateProduct (CreateProductRequest) returns (Response);
+  rpc UpdateProduct (UpdateProductRequest) returns (Response);
+  rpc GetProduct (ProductID) returns (Response);
+  rpc ListProducts (ProductFilter) returns (Response);
+  rpc DeleteProduct (ProductID) returns (Response);
+  rpc UpdateInventory (UpdateInventoryRequest) returns (Response);
+}
+
+message Response {
+  int32 code = 1;
+  string status = 2;
+  string timestamp = 3;
+  string data = 4;
+  string error = 5;
 }
 
 message CreateProductRequest {
@@ -50,39 +58,7 @@ message ProductFilter {
   string brand = 4;
 }
 
-message ProductResponse {
-  string id = 1;
-  string name = 2;
-  string categoryName = 3;
-  string brand = 4;
-  string imageUrl = 5;
-  string description = 6;
-  double price = 7;
-  int32 totalStock = 8;
-  repeated VariantResponse variants = 10;
-}
-
-message ProductListResponse {
-  repeated ProductResponse products = 1;
-  int32 total = 2;
-  int32 page = 3;
-  int32 pageSize = 4;
-}
-
-message VariantResponse {
-  string id = 1;
-  string size = 2;
-  string color = 3;
-  int32 stock = 4;
-}
-
 message UpdateInventoryRequest {
   string productId = 1;
   repeated Variant variants = 2;
-}
-
-
-message DeleteProductResponse{
-  bool success = 1;
-  string message = 2;
 }

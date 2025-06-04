@@ -4,9 +4,6 @@ import { productDao } from './dao/product.dao';
 import { 
   CreateProductRequest,
   UpdateProductRequest,
-  ProductResponse,
-  ProductListResponse,
-  DeleteProductResponse,
   UpdateInventoryRequest
 } from '../proto/product';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
@@ -42,73 +39,53 @@ export class ProductService {
   }
 
   async getProduct(id: string): Promise<Product> {
-    try{
-      const product = this.productDao.getProductDao(id);
-      if(!product){
-        throw new GrpcNotFoundException('Product not found');
-      }
-      return product;
-    } catch(error) {
-      this.logger.error('Failed to get product',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcNotFoundException( 'Failed to get product')
-    }
+    const product = this.productDao.getProductDao(id);
+    return product;
   }
 
-  async listProducts(filter: any): Promise<ProductListResponse> {
-    try {
-      const page = filter.page || 1;
-      const pageSize = filter.pageSize || 10;
-      const { products, total } = await this.productDao.listProductsDao(filter);
+  // async listProducts(filter: any): Promise<ProductListResponse> {
+  //   try {
+  //     const page = filter.page || 1;
+  //     const pageSize = filter.pageSize || 10;
+  //     const { products, total } = await this.productDao.listProductsDao(filter);
+  //     return {
+  //       products: products.map((product) => this.mapToResponse(product)),
+  //       total,
+  //       page,
+  //       pageSize,
+  //     };
+  //   } catch (error) {
+  //     this.logger.error('Failed to create product',{ error, timestamp: new Date().toISOString()});
+  //     throw new GrpcBadRequestException('Failed to list Products')
+  //   }
+  // }
 
-      return {
-        products: products.map((product) => this.mapToResponse(product)),
-        total,
-        page,
-        pageSize,
-      };
-    } catch (error) {
-      this.logger.error('Failed to create product',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcBadRequestException('Failed to list Products')
-    }
+
+  async deleteProduct(data: { id: string }){
+    return this.productDao.deleteProductDao(data.id);
   }
 
-
-  async deleteProduct(data: { id: string }): Promise<DeleteProductResponse> {
-    try {
-      return this.productDao.deleteProductDao(data.id);
-    } catch (error) {
-      this.logger.error(`Product Not Deleted with ID${data.id}`,{ error, timestamp: new Date().toISOString()});
-      throw new GrpcBadRequestException(`Product Not Deleted with ID${data.id}`);
-    }
+  async updateVariants(data: UpdateInventoryRequest): Promise<Product> {
+    const updatedProduct = await this.productDao.updateVariantsDao(data);
+    return updatedProduct;
   }
 
-  async updateVariants(data: UpdateInventoryRequest): Promise<ProductResponse> {
-    try {
-      const updatedProduct = await this.productDao.updateVariantsDao(data);
-      return this.mapToResponse(updatedProduct);
-    } catch (error) {
-      this.logger.error('Variants not Updated Some Issues',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcBadRequestException('Variants not Updated Some Issues');
-    }
-    
-  }
-
-  mapToResponse(product: any): ProductResponse {
-    return {
-      id: product._id.toString(),
-      name: product.name,
-      categoryName: product.categoryName,
-      brand: product.brand,
-      imageUrl: product.imageUrl,
-      description: product.description,
-      price: product.price,
-      totalStock: product.totalStock,
-      variants: (product.variants || []).map(v => ({
-        id: v._id.toString(),
-        size: v.size,
-        color: v.color,
-        stock: v.stock
-      }))
-    };
-  }
+  // mapToResponse(product: any): ProductResponse {
+  //   return {
+  //     id: product._id.toString(),
+  //     name: product.name,
+  //     categoryName: product.categoryName,
+  //     brand: product.brand,
+  //     imageUrl: product.imageUrl,
+  //     description: product.description,
+  //     price: product.price,
+  //     totalStock: product.totalStock,
+  //     variants: (product.variants || []).map(v => ({
+  //       id: v._id.toString(),
+  //       size: v.size,
+  //       color: v.color,
+  //       stock: v.stock
+  //     }))
+  //   };
+  // }
 }

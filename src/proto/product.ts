@@ -21,6 +21,14 @@ import {
 
 export const protobufPackage = "product";
 
+export interface Response {
+  code: number;
+  status: string;
+  timestamp: string;
+  data: string;
+  error: string;
+}
+
 export interface CreateProductRequest {
   name: string;
   categoryName: string;
@@ -60,41 +68,134 @@ export interface ProductFilter {
   brand: string;
 }
 
-export interface ProductResponse {
-  id: string;
-  name: string;
-  categoryName: string;
-  brand: string;
-  imageUrl: string;
-  description: string;
-  price: number;
-  totalStock: number;
-  variants: VariantResponse[];
-}
-
-export interface ProductListResponse {
-  products: ProductResponse[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-export interface VariantResponse {
-  id: string;
-  size: string;
-  color: string;
-  stock: number;
-}
-
 export interface UpdateInventoryRequest {
   productId: string;
   variants: Variant[];
 }
 
-export interface DeleteProductResponse {
-  success: boolean;
-  message: string;
+function createBaseResponse(): Response {
+  return { code: 0, status: "", timestamp: "", data: "", error: "" };
 }
+
+export const Response: MessageFns<Response> = {
+  encode(message: Response, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.code !== 0) {
+      writer.uint32(8).int32(message.code);
+    }
+    if (message.status !== "") {
+      writer.uint32(18).string(message.status);
+    }
+    if (message.timestamp !== "") {
+      writer.uint32(26).string(message.timestamp);
+    }
+    if (message.data !== "") {
+      writer.uint32(34).string(message.data);
+    }
+    if (message.error !== "") {
+      writer.uint32(42).string(message.error);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): Response {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 8) {
+            break;
+          }
+
+          message.code = reader.int32();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.status = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.timestamp = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.data = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.error = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): Response {
+    return {
+      code: isSet(object.code) ? globalThis.Number(object.code) : 0,
+      status: isSet(object.status) ? globalThis.String(object.status) : "",
+      timestamp: isSet(object.timestamp) ? globalThis.String(object.timestamp) : "",
+      data: isSet(object.data) ? globalThis.String(object.data) : "",
+      error: isSet(object.error) ? globalThis.String(object.error) : "",
+    };
+  },
+
+  toJSON(message: Response): unknown {
+    const obj: any = {};
+    if (message.code !== 0) {
+      obj.code = Math.round(message.code);
+    }
+    if (message.status !== "") {
+      obj.status = message.status;
+    }
+    if (message.timestamp !== "") {
+      obj.timestamp = message.timestamp;
+    }
+    if (message.data !== "") {
+      obj.data = message.data;
+    }
+    if (message.error !== "") {
+      obj.error = message.error;
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<Response>): Response {
+    return Response.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<Response>): Response {
+    const message = createBaseResponse();
+    message.code = object.code ?? 0;
+    message.status = object.status ?? "";
+    message.timestamp = object.timestamp ?? "";
+    message.data = object.data ?? "";
+    message.error = object.error ?? "";
+    return message;
+  },
+};
 
 function createBaseCreateProductRequest(): CreateProductRequest {
   return {
@@ -716,424 +817,6 @@ export const ProductFilter: MessageFns<ProductFilter> = {
   },
 };
 
-function createBaseProductResponse(): ProductResponse {
-  return {
-    id: "",
-    name: "",
-    categoryName: "",
-    brand: "",
-    imageUrl: "",
-    description: "",
-    price: 0,
-    totalStock: 0,
-    variants: [],
-  };
-}
-
-export const ProductResponse: MessageFns<ProductResponse> = {
-  encode(message: ProductResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
-    if (message.name !== "") {
-      writer.uint32(18).string(message.name);
-    }
-    if (message.categoryName !== "") {
-      writer.uint32(26).string(message.categoryName);
-    }
-    if (message.brand !== "") {
-      writer.uint32(34).string(message.brand);
-    }
-    if (message.imageUrl !== "") {
-      writer.uint32(42).string(message.imageUrl);
-    }
-    if (message.description !== "") {
-      writer.uint32(50).string(message.description);
-    }
-    if (message.price !== 0) {
-      writer.uint32(57).double(message.price);
-    }
-    if (message.totalStock !== 0) {
-      writer.uint32(64).int32(message.totalStock);
-    }
-    for (const v of message.variants) {
-      VariantResponse.encode(v!, writer.uint32(82).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ProductResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProductResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.categoryName = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.brand = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.imageUrl = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 50) {
-            break;
-          }
-
-          message.description = reader.string();
-          continue;
-        }
-        case 7: {
-          if (tag !== 57) {
-            break;
-          }
-
-          message.price = reader.double();
-          continue;
-        }
-        case 8: {
-          if (tag !== 64) {
-            break;
-          }
-
-          message.totalStock = reader.int32();
-          continue;
-        }
-        case 10: {
-          if (tag !== 82) {
-            break;
-          }
-
-          message.variants.push(VariantResponse.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ProductResponse {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      categoryName: isSet(object.categoryName) ? globalThis.String(object.categoryName) : "",
-      brand: isSet(object.brand) ? globalThis.String(object.brand) : "",
-      imageUrl: isSet(object.imageUrl) ? globalThis.String(object.imageUrl) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
-      totalStock: isSet(object.totalStock) ? globalThis.Number(object.totalStock) : 0,
-      variants: globalThis.Array.isArray(object?.variants)
-        ? object.variants.map((e: any) => VariantResponse.fromJSON(e))
-        : [],
-    };
-  },
-
-  toJSON(message: ProductResponse): unknown {
-    const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.categoryName !== "") {
-      obj.categoryName = message.categoryName;
-    }
-    if (message.brand !== "") {
-      obj.brand = message.brand;
-    }
-    if (message.imageUrl !== "") {
-      obj.imageUrl = message.imageUrl;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.price !== 0) {
-      obj.price = message.price;
-    }
-    if (message.totalStock !== 0) {
-      obj.totalStock = Math.round(message.totalStock);
-    }
-    if (message.variants?.length) {
-      obj.variants = message.variants.map((e) => VariantResponse.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ProductResponse>): ProductResponse {
-    return ProductResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ProductResponse>): ProductResponse {
-    const message = createBaseProductResponse();
-    message.id = object.id ?? "";
-    message.name = object.name ?? "";
-    message.categoryName = object.categoryName ?? "";
-    message.brand = object.brand ?? "";
-    message.imageUrl = object.imageUrl ?? "";
-    message.description = object.description ?? "";
-    message.price = object.price ?? 0;
-    message.totalStock = object.totalStock ?? 0;
-    message.variants = object.variants?.map((e) => VariantResponse.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseProductListResponse(): ProductListResponse {
-  return { products: [], total: 0, page: 0, pageSize: 0 };
-}
-
-export const ProductListResponse: MessageFns<ProductListResponse> = {
-  encode(message: ProductListResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    for (const v of message.products) {
-      ProductResponse.encode(v!, writer.uint32(10).fork()).join();
-    }
-    if (message.total !== 0) {
-      writer.uint32(16).int32(message.total);
-    }
-    if (message.page !== 0) {
-      writer.uint32(24).int32(message.page);
-    }
-    if (message.pageSize !== 0) {
-      writer.uint32(32).int32(message.pageSize);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): ProductListResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProductListResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.products.push(ProductResponse.decode(reader, reader.uint32()));
-          continue;
-        }
-        case 2: {
-          if (tag !== 16) {
-            break;
-          }
-
-          message.total = reader.int32();
-          continue;
-        }
-        case 3: {
-          if (tag !== 24) {
-            break;
-          }
-
-          message.page = reader.int32();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.pageSize = reader.int32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ProductListResponse {
-    return {
-      products: globalThis.Array.isArray(object?.products)
-        ? object.products.map((e: any) => ProductResponse.fromJSON(e))
-        : [],
-      total: isSet(object.total) ? globalThis.Number(object.total) : 0,
-      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-    };
-  },
-
-  toJSON(message: ProductListResponse): unknown {
-    const obj: any = {};
-    if (message.products?.length) {
-      obj.products = message.products.map((e) => ProductResponse.toJSON(e));
-    }
-    if (message.total !== 0) {
-      obj.total = Math.round(message.total);
-    }
-    if (message.page !== 0) {
-      obj.page = Math.round(message.page);
-    }
-    if (message.pageSize !== 0) {
-      obj.pageSize = Math.round(message.pageSize);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<ProductListResponse>): ProductListResponse {
-    return ProductListResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<ProductListResponse>): ProductListResponse {
-    const message = createBaseProductListResponse();
-    message.products = object.products?.map((e) => ProductResponse.fromPartial(e)) || [];
-    message.total = object.total ?? 0;
-    message.page = object.page ?? 0;
-    message.pageSize = object.pageSize ?? 0;
-    return message;
-  },
-};
-
-function createBaseVariantResponse(): VariantResponse {
-  return { id: "", size: "", color: "", stock: 0 };
-}
-
-export const VariantResponse: MessageFns<VariantResponse> = {
-  encode(message: VariantResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
-    if (message.size !== "") {
-      writer.uint32(18).string(message.size);
-    }
-    if (message.color !== "") {
-      writer.uint32(26).string(message.color);
-    }
-    if (message.stock !== 0) {
-      writer.uint32(32).int32(message.stock);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): VariantResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseVariantResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.size = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.color = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 32) {
-            break;
-          }
-
-          message.stock = reader.int32();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): VariantResponse {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      size: isSet(object.size) ? globalThis.String(object.size) : "",
-      color: isSet(object.color) ? globalThis.String(object.color) : "",
-      stock: isSet(object.stock) ? globalThis.Number(object.stock) : 0,
-    };
-  },
-
-  toJSON(message: VariantResponse): unknown {
-    const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.size !== "") {
-      obj.size = message.size;
-    }
-    if (message.color !== "") {
-      obj.color = message.color;
-    }
-    if (message.stock !== 0) {
-      obj.stock = Math.round(message.stock);
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<VariantResponse>): VariantResponse {
-    return VariantResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<VariantResponse>): VariantResponse {
-    const message = createBaseVariantResponse();
-    message.id = object.id ?? "";
-    message.size = object.size ?? "";
-    message.color = object.color ?? "";
-    message.stock = object.stock ?? 0;
-    return message;
-  },
-};
-
 function createBaseUpdateInventoryRequest(): UpdateInventoryRequest {
   return { productId: "", variants: [] };
 }
@@ -1210,82 +893,6 @@ export const UpdateInventoryRequest: MessageFns<UpdateInventoryRequest> = {
   },
 };
 
-function createBaseDeleteProductResponse(): DeleteProductResponse {
-  return { success: false, message: "" };
-}
-
-export const DeleteProductResponse: MessageFns<DeleteProductResponse> = {
-  encode(message: DeleteProductResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.success !== false) {
-      writer.uint32(8).bool(message.success);
-    }
-    if (message.message !== "") {
-      writer.uint32(18).string(message.message);
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): DeleteProductResponse {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseDeleteProductResponse();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 8) {
-            break;
-          }
-
-          message.success = reader.bool();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.message = reader.string();
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): DeleteProductResponse {
-    return {
-      success: isSet(object.success) ? globalThis.Boolean(object.success) : false,
-      message: isSet(object.message) ? globalThis.String(object.message) : "",
-    };
-  },
-
-  toJSON(message: DeleteProductResponse): unknown {
-    const obj: any = {};
-    if (message.success !== false) {
-      obj.success = message.success;
-    }
-    if (message.message !== "") {
-      obj.message = message.message;
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<DeleteProductResponse>): DeleteProductResponse {
-    return DeleteProductResponse.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<DeleteProductResponse>): DeleteProductResponse {
-    const message = createBaseDeleteProductResponse();
-    message.success = object.success ?? false;
-    message.message = object.message ?? "";
-    return message;
-  },
-};
-
 export type ProductServiceService = typeof ProductServiceService;
 export const ProductServiceService = {
   createProduct: {
@@ -1294,8 +901,8 @@ export const ProductServiceService = {
     responseStream: false,
     requestSerialize: (value: CreateProductRequest) => Buffer.from(CreateProductRequest.encode(value).finish()),
     requestDeserialize: (value: Buffer) => CreateProductRequest.decode(value),
-    responseSerialize: (value: ProductResponse) => Buffer.from(ProductResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer) => ProductResponse.decode(value),
+    responseSerialize: (value: Response) => Buffer.from(Response.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Response.decode(value),
   },
   updateProduct: {
     path: "/product.ProductService/UpdateProduct",
@@ -1303,8 +910,8 @@ export const ProductServiceService = {
     responseStream: false,
     requestSerialize: (value: UpdateProductRequest) => Buffer.from(UpdateProductRequest.encode(value).finish()),
     requestDeserialize: (value: Buffer) => UpdateProductRequest.decode(value),
-    responseSerialize: (value: ProductResponse) => Buffer.from(ProductResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer) => ProductResponse.decode(value),
+    responseSerialize: (value: Response) => Buffer.from(Response.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Response.decode(value),
   },
   getProduct: {
     path: "/product.ProductService/GetProduct",
@@ -1312,8 +919,8 @@ export const ProductServiceService = {
     responseStream: false,
     requestSerialize: (value: ProductID) => Buffer.from(ProductID.encode(value).finish()),
     requestDeserialize: (value: Buffer) => ProductID.decode(value),
-    responseSerialize: (value: ProductResponse) => Buffer.from(ProductResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer) => ProductResponse.decode(value),
+    responseSerialize: (value: Response) => Buffer.from(Response.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Response.decode(value),
   },
   listProducts: {
     path: "/product.ProductService/ListProducts",
@@ -1321,8 +928,8 @@ export const ProductServiceService = {
     responseStream: false,
     requestSerialize: (value: ProductFilter) => Buffer.from(ProductFilter.encode(value).finish()),
     requestDeserialize: (value: Buffer) => ProductFilter.decode(value),
-    responseSerialize: (value: ProductListResponse) => Buffer.from(ProductListResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer) => ProductListResponse.decode(value),
+    responseSerialize: (value: Response) => Buffer.from(Response.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Response.decode(value),
   },
   deleteProduct: {
     path: "/product.ProductService/DeleteProduct",
@@ -1330,8 +937,8 @@ export const ProductServiceService = {
     responseStream: false,
     requestSerialize: (value: ProductID) => Buffer.from(ProductID.encode(value).finish()),
     requestDeserialize: (value: Buffer) => ProductID.decode(value),
-    responseSerialize: (value: DeleteProductResponse) => Buffer.from(DeleteProductResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer) => DeleteProductResponse.decode(value),
+    responseSerialize: (value: Response) => Buffer.from(Response.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Response.decode(value),
   },
   updateInventory: {
     path: "/product.ProductService/UpdateInventory",
@@ -1339,110 +946,107 @@ export const ProductServiceService = {
     responseStream: false,
     requestSerialize: (value: UpdateInventoryRequest) => Buffer.from(UpdateInventoryRequest.encode(value).finish()),
     requestDeserialize: (value: Buffer) => UpdateInventoryRequest.decode(value),
-    responseSerialize: (value: ProductResponse) => Buffer.from(ProductResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer) => ProductResponse.decode(value),
+    responseSerialize: (value: Response) => Buffer.from(Response.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Response.decode(value),
   },
 } as const;
 
 export interface ProductServiceServer extends UntypedServiceImplementation {
-  createProduct: handleUnaryCall<CreateProductRequest, ProductResponse>;
-  updateProduct: handleUnaryCall<UpdateProductRequest, ProductResponse>;
-  getProduct: handleUnaryCall<ProductID, ProductResponse>;
-  listProducts: handleUnaryCall<ProductFilter, ProductListResponse>;
-  deleteProduct: handleUnaryCall<ProductID, DeleteProductResponse>;
-  updateInventory: handleUnaryCall<UpdateInventoryRequest, ProductResponse>;
+  createProduct: handleUnaryCall<CreateProductRequest, Response>;
+  updateProduct: handleUnaryCall<UpdateProductRequest, Response>;
+  getProduct: handleUnaryCall<ProductID, Response>;
+  listProducts: handleUnaryCall<ProductFilter, Response>;
+  deleteProduct: handleUnaryCall<ProductID, Response>;
+  updateInventory: handleUnaryCall<UpdateInventoryRequest, Response>;
 }
 
 export interface ProductServiceClient extends Client {
   createProduct(
     request: CreateProductRequest,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   createProduct(
     request: CreateProductRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   createProduct(
     request: CreateProductRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   updateProduct(
     request: UpdateProductRequest,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   updateProduct(
     request: UpdateProductRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   updateProduct(
     request: UpdateProductRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
-  getProduct(
-    request: ProductID,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
-  ): ClientUnaryCall;
+  getProduct(request: ProductID, callback: (error: ServiceError | null, response: Response) => void): ClientUnaryCall;
   getProduct(
     request: ProductID,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   getProduct(
     request: ProductID,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   listProducts(
     request: ProductFilter,
-    callback: (error: ServiceError | null, response: ProductListResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   listProducts(
     request: ProductFilter,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: ProductListResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   listProducts(
     request: ProductFilter,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: ProductListResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   deleteProduct(
     request: ProductID,
-    callback: (error: ServiceError | null, response: DeleteProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   deleteProduct(
     request: ProductID,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: DeleteProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   deleteProduct(
     request: ProductID,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: DeleteProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   updateInventory(
     request: UpdateInventoryRequest,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   updateInventory(
     request: UpdateInventoryRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
   updateInventory(
     request: UpdateInventoryRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: ProductResponse) => void,
+    callback: (error: ServiceError | null, response: Response) => void,
   ): ClientUnaryCall;
 }
 

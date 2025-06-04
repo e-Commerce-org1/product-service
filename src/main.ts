@@ -29,7 +29,7 @@ async function bootstrap() {
   app.useGlobalFilters(new GrpcExceptionFilter());
   
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
-  logger.log(`Grpc Service is running on: http://localhost:${grpcPort}`, 'Bootstrap');
+  logger.log(`Grpc Service is running on: ${grpcPort}`, 'Bootstrap');
   logger.log(`Database is connected to ${process.env.MONGODB_URI}`, 'Bootstrap');
 }
 bootstrap();
