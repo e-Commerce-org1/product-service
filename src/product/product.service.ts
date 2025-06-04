@@ -43,7 +43,11 @@ export class ProductService {
 
   async getProduct(id: string): Promise<Product> {
     try{
-      return this.productDao.getProductDao(id);
+      const product = this.productDao.getProductDao(id);
+      if(!product){
+        throw new GrpcNotFoundException('Product not found');
+      }
+      return product;
     } catch(error) {
       this.logger.error('Failed to get product',{ error, timestamp: new Date().toISOString()});
       throw new GrpcNotFoundException( 'Failed to get product')
@@ -73,6 +77,7 @@ export class ProductService {
     try {
       return this.productDao.deleteProductDao(data.id);
     } catch (error) {
+      this.logger.error(`Product Not Deleted with ID${data.id}`,{ error, timestamp: new Date().toISOString()});
       throw new GrpcBadRequestException(`Product Not Deleted with ID${data.id}`);
     }
   }
@@ -82,6 +87,7 @@ export class ProductService {
       const updatedProduct = await this.productDao.updateVariantsDao(data);
       return this.mapToResponse(updatedProduct);
     } catch (error) {
+      this.logger.error('Variants not Updated Some Issues',{ error, timestamp: new Date().toISOString()});
       throw new GrpcBadRequestException('Variants not Updated Some Issues');
     }
     

@@ -11,7 +11,6 @@ import {
   ProductListResponse,
   UpdateInventoryRequest
 } from '../proto/product';
-import { GrpcNotFoundException } from 'src/filters/custom-exceptions';
 
 @Controller()
 export class ProductGrpcController {
@@ -19,7 +18,6 @@ export class ProductGrpcController {
 
   @GrpcMethod(grpcService, grpcMethods.create)
   async createProduct(data: CreateProductRequest): Promise<ProductResponse> {
-    // throw new ForbiddenException();
     const product = await this.productService.createProduct(data);
     return this.productService.mapToResponse(product);
   }
@@ -33,9 +31,6 @@ export class ProductGrpcController {
   @GrpcMethod(grpcService, grpcMethods.get)
   async getProduct(data: ProductID): Promise<ProductResponse> {
     const product = await this.productService.getProduct(data.id);
-    if (!product) {
-      throw new GrpcNotFoundException('Product not found');
-    }
     return this.productService.mapToResponse(product);
   }
 
