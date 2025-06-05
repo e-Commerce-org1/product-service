@@ -13,7 +13,6 @@ import {
 
 @Controller()
 export class ProductGrpcController {
-  logger: any;
   constructor(private readonly productService: ProductService) {}
 
   @GrpcMethod(grpcService, grpcMethods.create)
@@ -88,16 +87,23 @@ export class ProductGrpcController {
     }
   }
 
-  // @GrpcMethod(grpcService, grpcMethods.getList)
-  // async listProducts(filter: ProductFilter): Promise<ProductListResponse> {
-  //   const result = await this.productService.listProducts(filter);
-  //   return {
-  //     products: result.products,
-  //     total: result.total,
-  //     page: result.page || 1,
-  //     pageSize: result.pageSize || 10
-  //   };
-  // }
+  @GrpcMethod(grpcService, grpcMethods.getList)
+  async listProducts(filter: ProductFilter): Promise<Response> {
+    const result = await this.productService.listProducts(filter);
+    const data = {
+       products: result.products,
+       total: result.total,
+       page: result.page || 1,
+       pageSize: result.pageSize || 10
+    }
+    return {
+      code: 200,
+      status: 'success',
+      timestamp: Date.now().toString(),
+      data: JSON.stringify(data),
+      error: '',
+    };
+  }
 
   @GrpcMethod(grpcService, grpcMethods.delete)
   async deleteProduct(data: { id: string }): Promise<Response> {

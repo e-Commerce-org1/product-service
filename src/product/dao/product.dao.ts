@@ -5,6 +5,7 @@ import { Product } from "src/product/schema/product.schema";
 import { Variant } from "src/product/schema/variant.schema";
 import { CreateProductRequest, UpdateInventoryRequest, UpdateProductRequest } from "src/proto/product";
 import { GrpcNotFoundException } from "src/filters/custom-exceptions";
+import { toArray } from "src/constants/const -function";
 
 
 @Injectable()
@@ -14,7 +15,12 @@ export class productDao {
         @InjectModel(Variant.name) private readonly variantModel: Model<Variant>
     ) {}
 
+    //  create product 
     async createProductDao(data: CreateProductRequest): Promise<Product>{
+        if(!data.subCategory){
+            data.subCategory = data.category;
+        }
+
         const newProduct = new this.productModel(data);
 
         const variants = await Promise.all(
@@ -31,10 +37,11 @@ export class productDao {
         return newProduct.save();
     }
 
+    // update the the product details
     async updateProductDao(data: UpdateProductRequest): Promise<Product> {
         const updatePayload: any = {
             ...(data.name && { name: data.name }),
-            ...(data.categoryName && { categoryName: data.categoryName }),
+            ...(data.category && { category: data.category }),
             ...(data.brand && { brand: data.brand }),
             ...(data.imageUrl && { imageUrl: data.imageUrl }),
             ...(data.description && { description: data.description }),
@@ -83,27 +90,40 @@ export class productDao {
         return product;
     }
 
+    // List All the product based on filter
     async listProductsDao(filter: any): Promise<{ products: any[]; total: number }> {
-        const page = filter.page || 1;
-        const pageSize = filter.pageSize || 10;
+        const page = parseInt(filter.page, 10) || 1;
+        const pageSize = parseInt(filter.pageSize, 10) || 10;
 
-        const query: any = {};
-        if (filter.categoryName) {
-            query.categoryName = { $regex: new RegExp(filter.categoryName, 'i') };
+        const orConditions: any[] = [];
+        const allowedFields = ['brand', 'category', 'name', 'size', 'color'];
+
+        for (const key of allowedFields) {
+            const values = toArray(filter[key]);
+            if (values.length > 0) {
+                if (key === 'name') {
+                    // Add each name as a separate regex match (partial, case-insensitive)
+                    for (const val of values) {
+                        orConditions.push({ name: { $regex: val, $options: 'i' } });
+                    }
+                } else {
+                    // Use $in for brand and categoryName
+                    orConditions.push({ [key]: { $in: values } });
+                }
+            }
         }
-        if (filter.brand) {
-            query.brand = { $regex: new RegExp(filter.brand, 'i') };
-        }
+
+        const mongoQuery = orConditions.length > 0 ? { $or: orConditions } : {};
 
         const [products, total] = await Promise.all([
             this.productModel
-                .find(query)
+                .find(mongoQuery)
                 .skip((page - 1) * pageSize)
                 .limit(pageSize)
                 .populate('variants')
                 .lean()
                 .exec(),
-            this.productModel.countDocuments(query).exec(),
+            this.productModel.countDocuments(mongoQuery).exec(),
         ]);
 
         return { products, total };
@@ -113,30 +133,27 @@ export class productDao {
     async deleteProductDao(id: string ) {
         const productObjectId = new Types.ObjectId(id);
         
-        const result = await this.productModel.findByIdAndDelete(id);
-        console.log("result------>", result);
-        if(!result) {
-            throw new GrpcNotFoundException(`In delete, Product Not Found with ID:${id}`);
+        const exit = await this.productModel.exists({_id: productObjectId});
+        if(!exit){
+            return null;
         }
 
         await this.variantModel.deleteMany({ 
             productId: productObjectId 
         });
-        
-        return result || "Not Found";
+
+        const result = await this.productModel.findByIdAndDelete(id);
+        return result;
     }
 
     // Updating the stocks with productId
     async updateVariantsDao(data: UpdateInventoryRequest){
         const productObjectId = new Types.ObjectId(data.productId);
-        // console.log(data.productId, productObjectId);
         const product = await this.productModel.findById({ _id: productObjectId });
-        // console.log(product);
         if (!product) {
             throw new GrpcNotFoundException(`Product Not Found with ID: ${productObjectId}`);
         }
 
-        // deleting the previous variants 
         await this.variantModel.deleteMany({ productId: productObjectId });
 
         const variants = await Promise.all(
@@ -153,6 +170,5 @@ export class productDao {
         product.totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
         
         return product.save();
-    }
-            
+    }    
 }

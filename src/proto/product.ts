@@ -31,7 +31,8 @@ export interface Response {
 
 export interface CreateProductRequest {
   name: string;
-  categoryName: string;
+  category: string;
+  subCategory?: string | undefined;
   brand: string;
   imageUrl: string;
   description: string;
@@ -43,7 +44,8 @@ export interface CreateProductRequest {
 export interface UpdateProductRequest {
   id: string;
   name?: string | undefined;
-  categoryName?: string | undefined;
+  category?: string | undefined;
+  subCategory?: string | undefined;
   brand?: string | undefined;
   imageUrl?: string | undefined;
   description?: string | undefined;
@@ -62,10 +64,12 @@ export interface ProductID {
 }
 
 export interface ProductFilter {
-  page: number;
-  pageSize: number;
-  categoryName: string;
-  brand: string;
+  page?: number | undefined;
+  pageSize?: number | undefined;
+  category?: string | undefined;
+  brand?: string | undefined;
+  subCategory?: string | undefined;
+  name?: string | undefined;
 }
 
 export interface UpdateInventoryRequest {
@@ -200,7 +204,8 @@ export const Response: MessageFns<Response> = {
 function createBaseCreateProductRequest(): CreateProductRequest {
   return {
     name: "",
-    categoryName: "",
+    category: "",
+    subCategory: undefined,
     brand: "",
     imageUrl: "",
     description: "",
@@ -215,26 +220,29 @@ export const CreateProductRequest: MessageFns<CreateProductRequest> = {
     if (message.name !== "") {
       writer.uint32(10).string(message.name);
     }
-    if (message.categoryName !== "") {
-      writer.uint32(18).string(message.categoryName);
+    if (message.category !== "") {
+      writer.uint32(18).string(message.category);
+    }
+    if (message.subCategory !== undefined) {
+      writer.uint32(26).string(message.subCategory);
     }
     if (message.brand !== "") {
-      writer.uint32(26).string(message.brand);
+      writer.uint32(34).string(message.brand);
     }
     if (message.imageUrl !== "") {
-      writer.uint32(34).string(message.imageUrl);
+      writer.uint32(42).string(message.imageUrl);
     }
     if (message.description !== "") {
-      writer.uint32(42).string(message.description);
+      writer.uint32(50).string(message.description);
     }
     if (message.price !== 0) {
-      writer.uint32(49).double(message.price);
+      writer.uint32(57).double(message.price);
     }
     if (message.totalStock !== 0) {
-      writer.uint32(56).int32(message.totalStock);
+      writer.uint32(64).int32(message.totalStock);
     }
     for (const v of message.variants) {
-      Variant.encode(v!, writer.uint32(66).fork()).join();
+      Variant.encode(v!, writer.uint32(74).fork()).join();
     }
     return writer;
   },
@@ -259,7 +267,7 @@ export const CreateProductRequest: MessageFns<CreateProductRequest> = {
             break;
           }
 
-          message.categoryName = reader.string();
+          message.category = reader.string();
           continue;
         }
         case 3: {
@@ -267,188 +275,7 @@ export const CreateProductRequest: MessageFns<CreateProductRequest> = {
             break;
           }
 
-          message.brand = reader.string();
-          continue;
-        }
-        case 4: {
-          if (tag !== 34) {
-            break;
-          }
-
-          message.imageUrl = reader.string();
-          continue;
-        }
-        case 5: {
-          if (tag !== 42) {
-            break;
-          }
-
-          message.description = reader.string();
-          continue;
-        }
-        case 6: {
-          if (tag !== 49) {
-            break;
-          }
-
-          message.price = reader.double();
-          continue;
-        }
-        case 7: {
-          if (tag !== 56) {
-            break;
-          }
-
-          message.totalStock = reader.int32();
-          continue;
-        }
-        case 8: {
-          if (tag !== 66) {
-            break;
-          }
-
-          message.variants.push(Variant.decode(reader, reader.uint32()));
-          continue;
-        }
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skip(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): CreateProductRequest {
-    return {
-      name: isSet(object.name) ? globalThis.String(object.name) : "",
-      categoryName: isSet(object.categoryName) ? globalThis.String(object.categoryName) : "",
-      brand: isSet(object.brand) ? globalThis.String(object.brand) : "",
-      imageUrl: isSet(object.imageUrl) ? globalThis.String(object.imageUrl) : "",
-      description: isSet(object.description) ? globalThis.String(object.description) : "",
-      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
-      totalStock: isSet(object.totalStock) ? globalThis.Number(object.totalStock) : 0,
-      variants: globalThis.Array.isArray(object?.variants) ? object.variants.map((e: any) => Variant.fromJSON(e)) : [],
-    };
-  },
-
-  toJSON(message: CreateProductRequest): unknown {
-    const obj: any = {};
-    if (message.name !== "") {
-      obj.name = message.name;
-    }
-    if (message.categoryName !== "") {
-      obj.categoryName = message.categoryName;
-    }
-    if (message.brand !== "") {
-      obj.brand = message.brand;
-    }
-    if (message.imageUrl !== "") {
-      obj.imageUrl = message.imageUrl;
-    }
-    if (message.description !== "") {
-      obj.description = message.description;
-    }
-    if (message.price !== 0) {
-      obj.price = message.price;
-    }
-    if (message.totalStock !== 0) {
-      obj.totalStock = Math.round(message.totalStock);
-    }
-    if (message.variants?.length) {
-      obj.variants = message.variants.map((e) => Variant.toJSON(e));
-    }
-    return obj;
-  },
-
-  create(base?: DeepPartial<CreateProductRequest>): CreateProductRequest {
-    return CreateProductRequest.fromPartial(base ?? {});
-  },
-  fromPartial(object: DeepPartial<CreateProductRequest>): CreateProductRequest {
-    const message = createBaseCreateProductRequest();
-    message.name = object.name ?? "";
-    message.categoryName = object.categoryName ?? "";
-    message.brand = object.brand ?? "";
-    message.imageUrl = object.imageUrl ?? "";
-    message.description = object.description ?? "";
-    message.price = object.price ?? 0;
-    message.totalStock = object.totalStock ?? 0;
-    message.variants = object.variants?.map((e) => Variant.fromPartial(e)) || [];
-    return message;
-  },
-};
-
-function createBaseUpdateProductRequest(): UpdateProductRequest {
-  return {
-    id: "",
-    name: undefined,
-    categoryName: undefined,
-    brand: undefined,
-    imageUrl: undefined,
-    description: undefined,
-    price: undefined,
-    variants: [],
-  };
-}
-
-export const UpdateProductRequest: MessageFns<UpdateProductRequest> = {
-  encode(message: UpdateProductRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
-    if (message.name !== undefined) {
-      writer.uint32(18).string(message.name);
-    }
-    if (message.categoryName !== undefined) {
-      writer.uint32(26).string(message.categoryName);
-    }
-    if (message.brand !== undefined) {
-      writer.uint32(34).string(message.brand);
-    }
-    if (message.imageUrl !== undefined) {
-      writer.uint32(42).string(message.imageUrl);
-    }
-    if (message.description !== undefined) {
-      writer.uint32(50).string(message.description);
-    }
-    if (message.price !== undefined) {
-      writer.uint32(57).double(message.price);
-    }
-    for (const v of message.variants) {
-      Variant.encode(v!, writer.uint32(66).fork()).join();
-    }
-    return writer;
-  },
-
-  decode(input: BinaryReader | Uint8Array, length?: number): UpdateProductRequest {
-    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseUpdateProductRequest();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1: {
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        }
-        case 2: {
-          if (tag !== 18) {
-            break;
-          }
-
-          message.name = reader.string();
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
-          message.categoryName = reader.string();
+          message.subCategory = reader.string();
           continue;
         }
         case 4: {
@@ -484,7 +311,213 @@ export const UpdateProductRequest: MessageFns<UpdateProductRequest> = {
           continue;
         }
         case 8: {
-          if (tag !== 66) {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.totalStock = reader.int32();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.variants.push(Variant.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CreateProductRequest {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      category: isSet(object.category) ? globalThis.String(object.category) : "",
+      subCategory: isSet(object.subCategory) ? globalThis.String(object.subCategory) : undefined,
+      brand: isSet(object.brand) ? globalThis.String(object.brand) : "",
+      imageUrl: isSet(object.imageUrl) ? globalThis.String(object.imageUrl) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      price: isSet(object.price) ? globalThis.Number(object.price) : 0,
+      totalStock: isSet(object.totalStock) ? globalThis.Number(object.totalStock) : 0,
+      variants: globalThis.Array.isArray(object?.variants) ? object.variants.map((e: any) => Variant.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: CreateProductRequest): unknown {
+    const obj: any = {};
+    if (message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.category !== "") {
+      obj.category = message.category;
+    }
+    if (message.subCategory !== undefined) {
+      obj.subCategory = message.subCategory;
+    }
+    if (message.brand !== "") {
+      obj.brand = message.brand;
+    }
+    if (message.imageUrl !== "") {
+      obj.imageUrl = message.imageUrl;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.price !== 0) {
+      obj.price = message.price;
+    }
+    if (message.totalStock !== 0) {
+      obj.totalStock = Math.round(message.totalStock);
+    }
+    if (message.variants?.length) {
+      obj.variants = message.variants.map((e) => Variant.toJSON(e));
+    }
+    return obj;
+  },
+
+  create(base?: DeepPartial<CreateProductRequest>): CreateProductRequest {
+    return CreateProductRequest.fromPartial(base ?? {});
+  },
+  fromPartial(object: DeepPartial<CreateProductRequest>): CreateProductRequest {
+    const message = createBaseCreateProductRequest();
+    message.name = object.name ?? "";
+    message.category = object.category ?? "";
+    message.subCategory = object.subCategory ?? undefined;
+    message.brand = object.brand ?? "";
+    message.imageUrl = object.imageUrl ?? "";
+    message.description = object.description ?? "";
+    message.price = object.price ?? 0;
+    message.totalStock = object.totalStock ?? 0;
+    message.variants = object.variants?.map((e) => Variant.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseUpdateProductRequest(): UpdateProductRequest {
+  return {
+    id: "",
+    name: undefined,
+    category: undefined,
+    subCategory: undefined,
+    brand: undefined,
+    imageUrl: undefined,
+    description: undefined,
+    price: undefined,
+    variants: [],
+  };
+}
+
+export const UpdateProductRequest: MessageFns<UpdateProductRequest> = {
+  encode(message: UpdateProductRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.name !== undefined) {
+      writer.uint32(18).string(message.name);
+    }
+    if (message.category !== undefined) {
+      writer.uint32(26).string(message.category);
+    }
+    if (message.subCategory !== undefined) {
+      writer.uint32(34).string(message.subCategory);
+    }
+    if (message.brand !== undefined) {
+      writer.uint32(42).string(message.brand);
+    }
+    if (message.imageUrl !== undefined) {
+      writer.uint32(50).string(message.imageUrl);
+    }
+    if (message.description !== undefined) {
+      writer.uint32(58).string(message.description);
+    }
+    if (message.price !== undefined) {
+      writer.uint32(65).double(message.price);
+    }
+    for (const v of message.variants) {
+      Variant.encode(v!, writer.uint32(74).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): UpdateProductRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateProductRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.category = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.subCategory = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.brand = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.imageUrl = reader.string();
+          continue;
+        }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
+        case 8: {
+          if (tag !== 65) {
+            break;
+          }
+
+          message.price = reader.double();
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
             break;
           }
 
@@ -504,7 +537,8 @@ export const UpdateProductRequest: MessageFns<UpdateProductRequest> = {
     return {
       id: isSet(object.id) ? globalThis.String(object.id) : "",
       name: isSet(object.name) ? globalThis.String(object.name) : undefined,
-      categoryName: isSet(object.categoryName) ? globalThis.String(object.categoryName) : undefined,
+      category: isSet(object.category) ? globalThis.String(object.category) : undefined,
+      subCategory: isSet(object.subCategory) ? globalThis.String(object.subCategory) : undefined,
       brand: isSet(object.brand) ? globalThis.String(object.brand) : undefined,
       imageUrl: isSet(object.imageUrl) ? globalThis.String(object.imageUrl) : undefined,
       description: isSet(object.description) ? globalThis.String(object.description) : undefined,
@@ -521,8 +555,11 @@ export const UpdateProductRequest: MessageFns<UpdateProductRequest> = {
     if (message.name !== undefined) {
       obj.name = message.name;
     }
-    if (message.categoryName !== undefined) {
-      obj.categoryName = message.categoryName;
+    if (message.category !== undefined) {
+      obj.category = message.category;
+    }
+    if (message.subCategory !== undefined) {
+      obj.subCategory = message.subCategory;
     }
     if (message.brand !== undefined) {
       obj.brand = message.brand;
@@ -549,7 +586,8 @@ export const UpdateProductRequest: MessageFns<UpdateProductRequest> = {
     const message = createBaseUpdateProductRequest();
     message.id = object.id ?? "";
     message.name = object.name ?? undefined;
-    message.categoryName = object.categoryName ?? undefined;
+    message.category = object.category ?? undefined;
+    message.subCategory = object.subCategory ?? undefined;
     message.brand = object.brand ?? undefined;
     message.imageUrl = object.imageUrl ?? undefined;
     message.description = object.description ?? undefined;
@@ -710,22 +748,35 @@ export const ProductID: MessageFns<ProductID> = {
 };
 
 function createBaseProductFilter(): ProductFilter {
-  return { page: 0, pageSize: 0, categoryName: "", brand: "" };
+  return {
+    page: undefined,
+    pageSize: undefined,
+    category: undefined,
+    brand: undefined,
+    subCategory: undefined,
+    name: undefined,
+  };
 }
 
 export const ProductFilter: MessageFns<ProductFilter> = {
   encode(message: ProductFilter, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.page !== 0) {
+    if (message.page !== undefined) {
       writer.uint32(8).int32(message.page);
     }
-    if (message.pageSize !== 0) {
+    if (message.pageSize !== undefined) {
       writer.uint32(16).int32(message.pageSize);
     }
-    if (message.categoryName !== "") {
-      writer.uint32(26).string(message.categoryName);
+    if (message.category !== undefined) {
+      writer.uint32(26).string(message.category);
     }
-    if (message.brand !== "") {
+    if (message.brand !== undefined) {
       writer.uint32(34).string(message.brand);
+    }
+    if (message.subCategory !== undefined) {
+      writer.uint32(42).string(message.subCategory);
+    }
+    if (message.name !== undefined) {
+      writer.uint32(50).string(message.name);
     }
     return writer;
   },
@@ -758,7 +809,7 @@ export const ProductFilter: MessageFns<ProductFilter> = {
             break;
           }
 
-          message.categoryName = reader.string();
+          message.category = reader.string();
           continue;
         }
         case 4: {
@@ -767,6 +818,22 @@ export const ProductFilter: MessageFns<ProductFilter> = {
           }
 
           message.brand = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.subCategory = reader.string();
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.name = reader.string();
           continue;
         }
       }
@@ -780,26 +847,34 @@ export const ProductFilter: MessageFns<ProductFilter> = {
 
   fromJSON(object: any): ProductFilter {
     return {
-      page: isSet(object.page) ? globalThis.Number(object.page) : 0,
-      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : 0,
-      categoryName: isSet(object.categoryName) ? globalThis.String(object.categoryName) : "",
-      brand: isSet(object.brand) ? globalThis.String(object.brand) : "",
+      page: isSet(object.page) ? globalThis.Number(object.page) : undefined,
+      pageSize: isSet(object.pageSize) ? globalThis.Number(object.pageSize) : undefined,
+      category: isSet(object.category) ? globalThis.String(object.category) : undefined,
+      brand: isSet(object.brand) ? globalThis.String(object.brand) : undefined,
+      subCategory: isSet(object.subCategory) ? globalThis.String(object.subCategory) : undefined,
+      name: isSet(object.name) ? globalThis.String(object.name) : undefined,
     };
   },
 
   toJSON(message: ProductFilter): unknown {
     const obj: any = {};
-    if (message.page !== 0) {
+    if (message.page !== undefined) {
       obj.page = Math.round(message.page);
     }
-    if (message.pageSize !== 0) {
+    if (message.pageSize !== undefined) {
       obj.pageSize = Math.round(message.pageSize);
     }
-    if (message.categoryName !== "") {
-      obj.categoryName = message.categoryName;
+    if (message.category !== undefined) {
+      obj.category = message.category;
     }
-    if (message.brand !== "") {
+    if (message.brand !== undefined) {
       obj.brand = message.brand;
+    }
+    if (message.subCategory !== undefined) {
+      obj.subCategory = message.subCategory;
+    }
+    if (message.name !== undefined) {
+      obj.name = message.name;
     }
     return obj;
   },
@@ -809,10 +884,12 @@ export const ProductFilter: MessageFns<ProductFilter> = {
   },
   fromPartial(object: DeepPartial<ProductFilter>): ProductFilter {
     const message = createBaseProductFilter();
-    message.page = object.page ?? 0;
-    message.pageSize = object.pageSize ?? 0;
-    message.categoryName = object.categoryName ?? "";
-    message.brand = object.brand ?? "";
+    message.page = object.page ?? undefined;
+    message.pageSize = object.pageSize ?? undefined;
+    message.category = object.category ?? undefined;
+    message.brand = object.brand ?? undefined;
+    message.subCategory = object.subCategory ?? undefined;
+    message.name = object.name ?? undefined;
     return message;
   },
 };

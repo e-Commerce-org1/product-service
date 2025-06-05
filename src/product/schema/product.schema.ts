@@ -8,7 +8,10 @@ export class Product extends Document {
   name: string;
 
   @Prop({ required: true, index: true })
-  categoryName: string;
+  category: string;
+
+  @Prop({required: true, index: true})
+  subCategory: string;
 
   @Prop({ required: true, index: true })
   brand: string;

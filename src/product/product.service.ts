@@ -4,7 +4,7 @@ import { productDao } from './dao/product.dao';
 import { 
   CreateProductRequest,
   UpdateProductRequest,
-  UpdateInventoryRequest
+  UpdateInventoryRequest,
 } from '../proto/product';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
@@ -43,26 +43,30 @@ export class ProductService {
     return product;
   }
 
-  // async listProducts(filter: any): Promise<ProductListResponse> {
-  //   try {
-  //     const page = filter.page || 1;
-  //     const pageSize = filter.pageSize || 10;
-  //     const { products, total } = await this.productDao.listProductsDao(filter);
-  //     return {
-  //       products: products.map((product) => this.mapToResponse(product)),
-  //       total,
-  //       page,
-  //       pageSize,
-  //     };
-  //   } catch (error) {
-  //     this.logger.error('Failed to create product',{ error, timestamp: new Date().toISOString()});
-  //     throw new GrpcBadRequestException('Failed to list Products')
-  //   }
-  // }
+  async listProducts(filter: any) {
+    try {
+      const page = filter.page || 1;
+      const pageSize = filter.pageSize || 10;
+      const { products, total } = await this.productDao.listProductsDao(filter);
+      return {
+        products: products.map((product) => this.mapToResponse(product)),
+        total,
+        page,
+        pageSize,
+      };
+    } catch (error) {
+      this.logger.error('Failed to create product',{ error, timestamp: new Date().toISOString()});
+      throw new GrpcBadRequestException('Failed to list Products')
+    }
+  }
 
 
   async deleteProduct(data: { id: string }){
-    return this.productDao.deleteProductDao(data.id);
+    const res = await this.productDao.deleteProductDao(data.id);
+    if(!res){
+      throw new GrpcNotFoundException(`In delete service, Product Not Found with ID:${data.id}`);
+    }
+    return res;
   }
 
   async updateVariants(data: UpdateInventoryRequest): Promise<Product> {
@@ -70,22 +74,22 @@ export class ProductService {
     return updatedProduct;
   }
 
-  // mapToResponse(product: any): ProductResponse {
-  //   return {
-  //     id: product._id.toString(),
-  //     name: product.name,
-  //     categoryName: product.categoryName,
-  //     brand: product.brand,
-  //     imageUrl: product.imageUrl,
-  //     description: product.description,
-  //     price: product.price,
-  //     totalStock: product.totalStock,
-  //     variants: (product.variants || []).map(v => ({
-  //       id: v._id.toString(),
-  //       size: v.size,
-  //       color: v.color,
-  //       stock: v.stock
-  //     }))
-  //   };
-  // }
+  mapToResponse(product: any) {
+    return {
+      id: product._id.toString(),
+      name: product.name,
+      categoryName: product.categoryName,
+      brand: product.brand,
+      imageUrl: product.imageUrl,
+      description: product.description,
+      price: product.price,
+      totalStock: product.totalStock,
+      variants: (product.variants || []).map(v => ({
+        id: v._id.toString(),
+        size: v.size,
+        color: v.color,
+        stock: v.stock
+      }))
+    };
+  }
 }
