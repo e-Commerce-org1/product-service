@@ -15,6 +15,7 @@ import {
 export class ProductGrpcController {
   constructor(private readonly productService: ProductService) {}
 
+  // These routes are for the admin service
   @GrpcMethod(grpcService, grpcMethods.create)
   async createProduct(data: CreateProductRequest): Promise<Response> {
     try{
@@ -108,7 +109,7 @@ export class ProductGrpcController {
   @GrpcMethod(grpcService, grpcMethods.delete)
   async deleteProduct(data: { id: string }): Promise<Response> {
     try{
-      const product =  this.productService.deleteProduct(data);
+      const product = this.productService.deleteProduct(data);
 
       return {
         code: 200,

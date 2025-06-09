@@ -6,6 +6,7 @@ import { Variant } from "src/product/schema/variant.schema";
 import { CreateProductRequest, UpdateInventoryRequest, UpdateProductRequest } from "src/proto/product";
 import { GrpcNotFoundException } from "src/filters/custom-exceptions";
 import { toArray } from "src/constants/const -function";
+import { FilterProductsDto } from "../dto/filter-products.dto";
 
 
 @Injectable()
@@ -13,11 +14,11 @@ export class productDao {
     constructor(
         @InjectModel(Product.name) private readonly productModel: Model<Product>,
         @InjectModel(Variant.name) private readonly variantModel: Model<Variant>
-    ) {}
+    ) { }
 
     //  create product 
-    async createProductDao(data: CreateProductRequest): Promise<Product>{
-        if(!data.subCategory){
+    async createProductDao(data: CreateProductRequest): Promise<Product> {
+        if (!data.subCategory) {
             data.subCategory = data.category;
         }
 
@@ -52,24 +53,24 @@ export class productDao {
             { $set: updatePayload },
             { new: true }
         )
-            
+
         if (!updatedProduct) {
-            throw new GrpcNotFoundException('Product not found in updating the product');
+            throw new GrpcNotFoundException('Product not found in updating!');
         }
-        
-        if(data.variants && data.variants.length > 0) {
+
+        if (data.variants && data.variants.length > 0) {
             const productObjectId = new Types.ObjectId(data.id);
             await this.variantModel.deleteMany({ productId: productObjectId });
-        
+
             const variants = await Promise.all(
-                data.variants.map(v => 
-                  this.variantModel.create({
-                    ...v,
-                    productId: updatedProduct._id
-                  })
+                data.variants.map(v =>
+                    this.variantModel.create({
+                        ...v,
+                        productId: updatedProduct._id
+                    })
                 )
             )
-        
+
             updatedProduct.totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
             updatedProduct.variants = variants;
             await updatedProduct.save();
@@ -78,12 +79,12 @@ export class productDao {
     }
 
     // Get Product By Id
-    async getProductDao(id : string) : Promise<Product> {
+    async getProductDao(id: string): Promise<Product> {
         const product = await this.productModel.findById(id)
             .populate('variants')
             .lean()
             .exec();
-  
+
         if (!product) {
             throw new GrpcNotFoundException(`Product not found with ID${id}`);
         }
@@ -130,24 +131,28 @@ export class productDao {
     }
 
     // deleting the product with variants by id
-    async deleteProductDao(id: string ) {
-        const productObjectId = new Types.ObjectId(id);
-        
-        const exit = await this.productModel.exists({_id: productObjectId});
-        if(!exit){
-            return null;
+    async deleteProductDao(id: string) {
+        try{
+            const productObjectId = new Types.ObjectId(id);
+            const exit = await this.productModel.exists({ _id: productObjectId });
+            if (!exit) {
+                throw new GrpcNotFoundException(`Product Not Found with ID: ${productObjectId}`);
+            }
+    
+            await this.variantModel.deleteMany({
+                productId: productObjectId
+            });
+    
+            const result = await this.productModel.findByIdAndDelete(id);
+            return result;
         }
-
-        await this.variantModel.deleteMany({ 
-            productId: productObjectId 
-        });
-
-        const result = await this.productModel.findByIdAndDelete(id);
-        return result;
+        catch(error){
+            throw error
+        }
     }
 
     // Updating the stocks with productId
-    async updateVariantsDao(data: UpdateInventoryRequest){
+    async updateVariantsDao(data: UpdateInventoryRequest) {
         const productObjectId = new Types.ObjectId(data.productId);
         const product = await this.productModel.findById({ _id: productObjectId });
         if (!product) {
@@ -157,18 +162,94 @@ export class productDao {
         await this.variantModel.deleteMany({ productId: productObjectId });
 
         const variants = await Promise.all(
-            data.variants.map(v => 
+            data.variants.map(v =>
                 this.variantModel.create({
-                size: v.size,
-                color: v.color,
-                stock: v.stock,
-                productId: productObjectId
+                    size: v.size,
+                    color: v.color,
+                    stock: v.stock,
+                    productId: productObjectId
                 })
             )
         );
         product.variants = variants;
         product.totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
-        
+
         return product.save();
-    }    
+    }
+
+
+    
+    async filterProducts(filterDto: FilterProductsDto) {
+        const { category, subCategory, brand, ProductName } = filterDto;
+
+        const query: any = {};
+
+        if (category) {
+        query.category = category;
+        }
+
+        if (subCategory) {
+        query.subCategory = subCategory;
+        }
+
+        if (brand) {
+        query.brand = brand;
+        }
+
+        if (ProductName) {
+        query.name = { $regex: ProductName, $options: 'i' }; // case-insensitive partial match
+        }
+
+        // Fetch matched products
+        const products = await this.productModel.find(query).populate('variants').lean();
+
+        // Extract metadata from matched products
+        const brandSet = new Set<string>();
+        const subCategorySet = new Set<string>();
+        const prices: number[] = [];
+
+        for (const product of products) {
+            if (product.brand) brandSet.add(product.brand);
+            if (product.subCategory) subCategorySet.add(product.subCategory);
+            if (product.price) prices.push(product.price);
+        }
+
+        const minPrice = prices.length ? Math.min(...prices) : null;
+        const maxPrice = prices.length ? Math.max(...prices) : null;
+
+        return {
+            products,
+            brands: Array.from(brandSet),
+            subCategories: Array.from(subCategorySet),
+            lowestPrice: minPrice,
+            highestPrice: maxPrice,
+        };
+    }
+
+
+    async getProductWithSimilar(productId: string) {
+        const product = await this.productModel.findById(productId).populate('variants').lean();
+
+        if (!product) {
+            throw new NotFoundException('Product not found');
+        }
+
+        // Find similar products by brand, category, or subcategory (excluding the current product)
+        const similarProducts = await this.productModel.find({
+            _id: { $ne: product._id },
+            $or: [
+                { brand: product.brand },
+                { category: product.category },
+                { subCategory: product.subCategory },
+                ],
+            })
+            .select('-variants')
+            .limit(10)
+            .lean();
+
+        return {
+            product,
+            similarProducts,
+        };
+    }
 }

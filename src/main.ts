@@ -26,10 +26,17 @@ async function bootstrap() {
   });
 
   await app.startAllMicroservices();
+
+  // Global Filters
   app.useGlobalFilters(new GrpcExceptionFilter());
+
+  // HTTP Server Setup
+  const httpPort = process.env.HTTP_PORT || 5000;
+  await app.listen(httpPort);
   
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
-  logger.log(`Grpc Service is running on: ${grpcPort}`, 'Bootstrap');
+  logger.log(`HTTP Server is running on: http://localhost:${httpPort}`, 'Bootstrap');
+  logger.log(`gRPC Service is running on: ${grpcPort}`, 'Bootstrap');
   logger.log(`Database is connected to ${process.env.MONGODB_URI}`, 'Bootstrap');
 }
 bootstrap();

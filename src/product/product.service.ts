@@ -9,6 +9,7 @@ import {
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { GrpcBadRequestException, GrpcNotFoundException } from 'src/filters/custom-exceptions';
+import { FilterProductsDto } from './dto/filter-products.dto';
 
 @Injectable()
 export class ProductService {
@@ -19,6 +20,7 @@ export class ProductService {
 
   async createProduct(data: CreateProductRequest): Promise<Product> {
     try {
+      this.logger.info("Product create Request!", {timestamp:  new Date().toISOString()})
       const newProduct = this.productDao.createProductDao(data);
       return newProduct;
     }catch(error){
@@ -30,6 +32,7 @@ export class ProductService {
 
   async updateProduct(data: UpdateProductRequest): Promise<Product> {
     try {
+      this.logger.info("Product update request!", {timestamp:  new Date().toISOString()});
       return this.productDao.updateProductDao(data);
     } catch (error) {
       this.logger.error('Failed to update product',{ error, timestamp: new Date().toISOString()});
@@ -39,12 +42,14 @@ export class ProductService {
   }
 
   async getProduct(id: string): Promise<Product> {
+    this.logger.info("Product read request!", {timestamp:  new Date().toISOString()});
     const product = this.productDao.getProductDao(id);
     return product;
   }
 
   async listProducts(filter: any) {
     try {
+      this.logger.info("All Product request as List", {timestamp:  new Date().toISOString()});
       const page = filter.page || 1;
       const pageSize = filter.pageSize || 10;
       const { products, total } = await this.productDao.listProductsDao(filter);
@@ -62,16 +67,33 @@ export class ProductService {
 
 
   async deleteProduct(data: { id: string }){
-    const res = await this.productDao.deleteProductDao(data.id);
-    if(!res){
-      throw new GrpcNotFoundException(`In delete service, Product Not Found with ID:${data.id}`);
+    try{
+      this.logger.info("Product deleted request! ", {timestamp:  new Date().toISOString()});
+      const res = await this.productDao.deleteProductDao(data.id);
+      if(!res){
+        throw new GrpcNotFoundException(`In delete service, Product Not Found with ID:${data.id}`);
+      }
+      return res;
     }
-    return res;
+    catch(error){
+      throw error;
+    }
   }
 
   async updateVariants(data: UpdateInventoryRequest): Promise<Product> {
+    this.logger.info("Product variants updated request!", {timestamp:  new Date().toISOString()});
     const updatedProduct = await this.productDao.updateVariantsDao(data);
     return updatedProduct;
+  }
+
+  async filterProducts(filterDto: FilterProductsDto){
+    this.logger.info("Http Request for filter product!", {timestamp: new Date().toISOString()});
+    return await this.productDao.filterProducts(filterDto);
+  }
+
+  async getProductWithSimilar(id: string){
+    this.logger.info("Get Product Details with similar product request!", {timestamp: new Date().toISOString()});
+    return await this.productDao.getProductWithSimilar(id);
   }
 
   mapToResponse(product: any) {
