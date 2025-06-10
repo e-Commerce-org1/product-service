@@ -1,5 +1,5 @@
 import { IsOptional, IsString } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class FilterProductsDto {
   @ApiPropertyOptional({ description: 'Filter by category name' })
