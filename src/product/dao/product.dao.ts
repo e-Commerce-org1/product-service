@@ -4,9 +4,11 @@ import { Model, Types } from "mongoose";
 import { Product } from "src/product/schema/product.schema";
 import { Variant } from "src/product/schema/variant.schema";
 import { CreateProductRequest, UpdateInventoryRequest, UpdateProductRequest } from "src/proto/product";
-import { GrpcNotFoundException } from "src/filters/custom-exceptions";
+
 import { toArray } from "src/constants/const -function";
 import { FilterProductsDto } from "../dto/filter-products.dto";
+import { GrpcAppException } from "src/filters/GrpcAppException";
+import { AppException } from "src/filters/AppException";
 
 
 @Injectable()
@@ -55,7 +57,7 @@ export class productDao {
         )
 
         if (!updatedProduct) {
-            throw new GrpcNotFoundException('Product not found in updating!');
+            throw GrpcAppException.notFound('Product not found in updating!');
         }
 
         if (data.variants && data.variants.length > 0) {
@@ -86,7 +88,7 @@ export class productDao {
             .exec();
 
         if (!product) {
-            throw new GrpcNotFoundException(`Product not found with ID${id}`);
+            throw GrpcAppException.notFound(`Product not found with ID: ${id}`);
         }
         return product;
     }
@@ -136,7 +138,7 @@ export class productDao {
             const productObjectId = new Types.ObjectId(id);
             const exit = await this.productModel.exists({ _id: productObjectId });
             if (!exit) {
-                throw new GrpcNotFoundException(`Product Not Found with ID: ${productObjectId}`);
+                throw GrpcAppException.notFound(`Product Not Found with ID: ${productObjectId}`);
             }
     
             await this.variantModel.deleteMany({
@@ -156,7 +158,7 @@ export class productDao {
         const productObjectId = new Types.ObjectId(data.productId);
         const product = await this.productModel.findById({ _id: productObjectId });
         if (!product) {
-            throw new GrpcNotFoundException(`Product Not Found with ID: ${productObjectId}`);
+            throw GrpcAppException.notFound(`Product Not Found with ID: ${productObjectId}`);
         }
 
         await this.variantModel.deleteMany({ productId: productObjectId });
@@ -178,30 +180,31 @@ export class productDao {
     }
 
 
-    
+    // Http Request Logic 
+
     async filterProducts(filterDto: FilterProductsDto) {
         const { category, subCategory, brand, ProductName } = filterDto;
 
         const query: any = {};
 
         if (category) {
-        query.category = category;
+        query.category = { $regex: category, $options: 'i' }
         }
 
         if (subCategory) {
-        query.subCategory = subCategory;
+        query.subCategory = { $regex: subCategory, $options: 'i' };
         }
 
         if (brand) {
-        query.brand = brand;
+        query.brand = { $regex: brand, $options: 'i' };
         }
 
         if (ProductName) {
-        query.name = { $regex: ProductName, $options: 'i' }; // case-insensitive partial match
+        query.name = { $regex: ProductName, $options: 'i' }; 
         }
 
         // Fetch matched products
-        const products = await this.productModel.find(query).populate('variants').lean();
+        const products = await this.productModel.find(query).select('-variants').lean();
 
         // Extract metadata from matched products
         const brandSet = new Set<string>();
@@ -219,10 +222,12 @@ export class productDao {
 
         return {
             products,
-            brands: Array.from(brandSet),
-            subCategories: Array.from(subCategorySet),
-            lowestPrice: minPrice,
-            highestPrice: maxPrice,
+            sideBar:{
+                brands: Array.from(brandSet),
+                subCategories: Array.from(subCategorySet),
+                lowestPrice: minPrice,
+                highestPrice: maxPrice,
+            }
         };
     }
 
@@ -231,7 +236,7 @@ export class productDao {
         const product = await this.productModel.findById(productId).populate('variants').lean();
 
         if (!product) {
-            throw new NotFoundException('Product not found');
+            throw AppException.notFound('Product not found!');
         }
 
         // Find similar products by brand, category, or subcategory (excluding the current product)

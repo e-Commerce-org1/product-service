@@ -1,15 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Product } from './schema/product.schema';
 import { productDao } from './dao/product.dao';
-import { 
-  CreateProductRequest,
-  UpdateProductRequest,
-  UpdateInventoryRequest,
-} from '../proto/product';
+import { CreateProductRequest, UpdateProductRequest, UpdateInventoryRequest,} from '../proto/product';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { GrpcBadRequestException, GrpcNotFoundException } from 'src/filters/custom-exceptions';
 import { FilterProductsDto } from './dto/filter-products.dto';
+import { GrpcAppException } from 'src/filters/GrpcAppException';
+import { AppException } from 'src/filters/AppException';
 
 @Injectable()
 export class ProductService {
@@ -25,7 +22,7 @@ export class ProductService {
       return newProduct;
     }catch(error){
       this.logger.error('Failed to create product',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcBadRequestException('Failed to create product')
+      throw GrpcAppException.badRequest('Failed to create Product! ');
     }
     
   }
@@ -36,15 +33,23 @@ export class ProductService {
       return this.productDao.updateProductDao(data);
     } catch (error) {
       this.logger.error('Failed to update product',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcBadRequestException('Failed to update product');
+      throw GrpcAppException.badRequest('Failed to update product!');
     }
     
   }
 
   async getProduct(id: string): Promise<Product> {
-    this.logger.info("Product read request!", {timestamp:  new Date().toISOString()});
-    const product = this.productDao.getProductDao(id);
-    return product;
+    try {
+      this.logger.info("Product read request!", {timestamp:  new Date().toISOString()});
+      const product = this.productDao.getProductDao(id);
+      if(!product){
+        throw GrpcAppException.notFound('Product not Found!');
+      }
+      return product;
+    } catch (error) {
+      throw GrpcAppException.notFound('Product not Found!');
+    }
+    
   }
 
   async listProducts(filter: any) {
@@ -61,7 +66,8 @@ export class ProductService {
       };
     } catch (error) {
       this.logger.error('Failed to create product',{ error, timestamp: new Date().toISOString()});
-      throw new GrpcBadRequestException('Failed to list Products')
+      // throw new GrpcBadRequestException('Failed to list Products');
+      throw GrpcAppException.badRequest('Failed to list Products!');
     }
   }
 
@@ -71,19 +77,24 @@ export class ProductService {
       this.logger.info("Product deleted request! ", {timestamp:  new Date().toISOString()});
       const res = await this.productDao.deleteProductDao(data.id);
       if(!res){
-        throw new GrpcNotFoundException(`In delete service, Product Not Found with ID:${data.id}`);
+        throw GrpcAppException.notFound('In Delete route, Product Not Found with ID');
       }
       return res;
     }
     catch(error){
-      throw error;
+      throw GrpcAppException.notFound('In Delete route, Product Not Found !');
     }
   }
 
   async updateVariants(data: UpdateInventoryRequest): Promise<Product> {
-    this.logger.info("Product variants updated request!", {timestamp:  new Date().toISOString()});
-    const updatedProduct = await this.productDao.updateVariantsDao(data);
-    return updatedProduct;
+    try {
+      this.logger.info("Product variants updated request!", {timestamp:  new Date().toISOString()});
+      const updatedProduct = await this.productDao.updateVariantsDao(data);
+      return updatedProduct;
+    } catch (error) {
+      throw GrpcAppException.notFound('In Updating the variants, Product not found !');
+    }
+    
   }
 
   async filterProducts(filterDto: FilterProductsDto){
@@ -92,8 +103,17 @@ export class ProductService {
   }
 
   async getProductWithSimilar(id: string){
-    this.logger.info("Get Product Details with similar product request!", {timestamp: new Date().toISOString()});
-    return await this.productDao.getProductWithSimilar(id);
+    try {
+      this.logger.info("Get Product Details with similar product request!", {timestamp: new Date().toISOString()});
+      const data = await this.productDao.getProductWithSimilar(id);
+      if(!data){
+        throw AppException.notFound(`Product Not Found with ID: ${id}`);
+      }
+      return data;
+    } catch (error) {
+      throw AppException.notFound(`Product Not Found with ID: ${id}`);
+    }
+    
   }
 
   mapToResponse(product: any) {
