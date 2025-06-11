@@ -97,9 +97,9 @@ export class ProductService {
     
   }
 
-  async filterProducts(filterDto: FilterProductsDto){
+  async filterProducts(searchTerm: string, filterDto: FilterProductsDto){
     this.logger.info("Http Request for filter product!", {timestamp: new Date().toISOString()});
-    return await this.productDao.filterProducts(filterDto);
+    return await this.productDao.filterProducts(searchTerm,filterDto);
   }
 
   async getProductWithSimilar(id: string){

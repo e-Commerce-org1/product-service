@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 import { Variant } from './variant.schema';
+import { Review } from 'src/review/schemas/review.schema';
 
 @Schema({ timestamps: true })
 export class Product extends Document {
@@ -33,6 +34,12 @@ export class Product extends Document {
     default: []
   })
   variants: Variant[];
+
+  @Prop({ 
+    type: [{ type: Types.ObjectId, ref: 'Review' }],
+    default: []
+  })
+  reviews: Review[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

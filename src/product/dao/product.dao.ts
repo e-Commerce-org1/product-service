@@ -4,7 +4,6 @@ import { Model, Types } from "mongoose";
 import { Product } from "src/product/schema/product.schema";
 import { Variant } from "src/product/schema/variant.schema";
 import { CreateProductRequest, UpdateInventoryRequest, UpdateProductRequest } from "src/proto/product";
-
 import { toArray } from "src/constants/const -function";
 import { FilterProductsDto } from "../dto/filter-products.dto";
 import { GrpcAppException } from "src/filters/GrpcAppException";
@@ -15,7 +14,7 @@ import { AppException } from "src/filters/AppException";
 export class productDao {
     constructor(
         @InjectModel(Product.name) private readonly productModel: Model<Product>,
-        @InjectModel(Variant.name) private readonly variantModel: Model<Variant>
+        @InjectModel(Variant.name) private readonly variantModel: Model<Variant>,
     ) { }
 
     //  create product 
@@ -180,60 +179,101 @@ export class productDao {
     }
 
 
-    // Http Request Logic 
+    // Http Request Logic
+    async filterProducts(searchTerm: string, filterDto: FilterProductsDto) {
+        const { category, subCategory, brand } = filterDto;
+        // console.log(searchTerm);
+        // Base query for searchTerm
+        const searchRegex = new RegExp(searchTerm, 'i');
+        const baseQuery = {
+            $or: [
+                { name: searchRegex },
+                { brand: searchRegex },
+                { category: searchRegex },
+                { subCategory: searchRegex },
+                { description: searchRegex}
+            ]
+        };
 
-    async filterProducts(filterDto: FilterProductsDto) {
-        const { category, subCategory, brand, ProductName } = filterDto;
-
-        const query: any = {};
+        // Additional filters from query parameters
+        const additionalFilters: any = {};
 
         if (category) {
-        query.category = { $regex: category, $options: 'i' }
+            additionalFilters.category = { $regex: category, $options: 'i' };
         }
 
         if (subCategory) {
-        query.subCategory = { $regex: subCategory, $options: 'i' };
+            if (Array.isArray(subCategory)) {
+                additionalFilters.subCategory = { 
+                    $in: subCategory.map(val => new RegExp(val, 'i')) 
+                };
+            } else {
+                additionalFilters.subCategory = { 
+                    $regex: subCategory, $options: 'i' 
+                };
+            }
         }
 
         if (brand) {
-        query.brand = { $regex: brand, $options: 'i' };
+            if (Array.isArray(brand)) {
+                additionalFilters.brand = { 
+                    $in: brand.map(val => new RegExp(val, 'i')) 
+                };
+            } else {
+                additionalFilters.brand = { 
+                    $regex: brand, $options: 'i' 
+                };
+            }
         }
 
-        if (ProductName) {
-        query.name = { $regex: ProductName, $options: 'i' }; 
-        }
+        // Combined query
+        const finalQuery = { ...baseQuery, ...additionalFilters };
 
-        // Fetch matched products
-        const products = await this.productModel.find(query).select('-variants').lean();
+        // Fetch filtered products
+        const products = await this.productModel.find(finalQuery)
+            .populate('variants')
+            .lean();
 
-        // Extract metadata from matched products
+        // Fetch base results for sidebar metadata
+        const allSearchResults = await this.productModel.find(baseQuery)
+            .populate('variants')
+            .lean();
+
+        // Metadata extraction from base search results
         const brandSet = new Set<string>();
         const subCategorySet = new Set<string>();
         const prices: number[] = [];
+        const colorSet = new Set<string>();
 
-        for (const product of products) {
+        for (const product of allSearchResults) {
             if (product.brand) brandSet.add(product.brand);
             if (product.subCategory) subCategorySet.add(product.subCategory);
             if (product.price) prices.push(product.price);
+            
+            if (product.variants) {
+                product.variants.forEach(variant => {
+                    if (variant.color) colorSet.add(variant.color);
+                });
+            }
         }
-
-        const minPrice = prices.length ? Math.min(...prices) : null;
-        const maxPrice = prices.length ? Math.max(...prices) : null;
 
         return {
             products,
-            sideBar:{
+            totalProducts: products.length,
+            sideBar: {
                 brands: Array.from(brandSet),
                 subCategories: Array.from(subCategorySet),
-                lowestPrice: minPrice,
-                highestPrice: maxPrice,
+                lowestPrice: prices.length ? Math.min(...prices) : null,
+                highestPrice: prices.length ? Math.max(...prices) : null,
+                colors: Array.from(colorSet)
             }
         };
     }
 
 
+
     async getProductWithSimilar(productId: string) {
-        const product = await this.productModel.findById(productId).populate('variants').lean();
+        const product = await this.productModel.findById(productId).populate('variants').populate('reviews').lean();
 
         if (!product) {
             throw AppException.notFound('Product not found!');

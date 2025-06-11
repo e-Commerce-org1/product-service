@@ -9,15 +9,15 @@ import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 export class ProductController {
     constructor(private readonly productService: ProductService) {}
 
-    @Get('/')
+    @Get(':searchTerm')
     @ApiOperation({ summary: 'Filter products by category, brand, subcategory, or name' })
     @ApiResponse({ status: 200, description: 'Filtered products with metadata' })
-    async filterProducts(@Query() filterDto: FilterProductsDto) {
-        console.log("Requested products");
-        return this.productService.filterProducts(filterDto);
+    async filterProducts(@Param('searchTerm') searchTerm: string, @Query() filterDto: FilterProductsDto) {
+        // console.log("Requested products");
+        return this.productService.filterProducts(searchTerm,filterDto);
     }
 
-    @Get('/:id')
+    @Get('details/:id')
     @ApiOperation({ summary: 'Get product details with similar products' })
     @ApiParam({ name: 'id', description: 'Product ID' })
     @ApiResponse({ status: 200, description: 'Product and similar products' })
