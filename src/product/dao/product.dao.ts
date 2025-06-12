@@ -4,7 +4,7 @@ import { Model, Types } from "mongoose";
 import { Product } from "src/product/schema/product.schema";
 import { Variant } from "src/product/schema/variant.schema";
 import { CreateProductRequest, UpdateInventoryRequest, UpdateProductRequest } from "src/proto/product";
-import { buildLooseSearchRegex, toArray } from "src/constants/const -function";
+import { buildLooseSearchRegex, side, toArray } from "src/constants/const -function";
 import { FilterProductsDto } from "../dto/filter-products.dto";
 import { GrpcAppException } from "src/filters/GrpcAppException";
 import { AppException } from "src/filters/AppException";
@@ -232,7 +232,7 @@ export class productDao {
         }
 
         if (gender) {
-            additionalFilters.gender = { $regex: gender, $options: 'i'}
+            additionalFilters.gender = { $regex: `^${gender}$`, $options: 'i' }
         }
 
         const p = price?.split(",").map(Number);
@@ -246,8 +246,7 @@ export class productDao {
         // Color filter inside variants
         if (color) {
             additionalFilters['variants.color'] = {
-                $regex: color,
-                $options: 'i'
+                $regex: new RegExp(color, 'i')
             };
         }
 
@@ -279,6 +278,7 @@ export class productDao {
                 .skip(skip)
                 .limit(limit)
                 .populate('variants')
+                .populate('reviews')
                 .lean(),
             this.productModel.countDocuments(finalQuery)
         ]);
@@ -291,6 +291,7 @@ export class productDao {
         // Metadata extraction from base search results
         const brandSet = new Set<string>();
         const subCategorySet = new Set<string>();
+        const categorySet = new Set<string>();
         const prices: number[] = [];
         const colorSet = new Set<string>();
         const genderSet = new Set<string>();
@@ -300,6 +301,7 @@ export class productDao {
             if (product.subCategory) subCategorySet.add(product.subCategory);
             if (product.price) prices.push(product.price);
             if (product.gender) genderSet.add(product.gender);
+            if (product.category) categorySet.add(product.category);
 
             if (product.variants) {
                 product.variants.forEach(variant => {
@@ -313,19 +315,44 @@ export class productDao {
             a = products.length;
         }
 
+        // Prepared sidebar arrays
+        const brands = Array.from(brandSet);
+        const categories = Array.from(categorySet);
+        const subCategories = Array.from(subCategorySet);
+        const colors = Array.from(colorSet);
+        const genders = Array.from(genderSet);
+
+        const lowestPrice = prices.length ? Math.min(...prices) : null;
+        const highestPrice = prices.length ? Math.max(...prices) : null;
+
+        // Only include sidebar fields if not filtered and more than one value
+        const sidebar : side = {
+            brands : [],
+            categories:[],
+            subCategories:[],
+            genders:[],
+            colors:[],
+            lowestPrice:0,
+            highestPrice:0
+        }
+
+        
+        if ( brands.length > 1 ) sidebar.brands = brands;
+        if ( categories.length > 1 ) sidebar.categories = categories;
+        if ( subCategories.length > 1)sidebar.subCategories = subCategories;
+        if ( genders.length > 1) sidebar.genders = genders;
+        if ( colors.length > 1 ) sidebar.colors = colors;
+        if (lowestPrice !== null && highestPrice !== null && lowestPrice !== highestPrice) {
+            sidebar.lowestPrice = lowestPrice;
+            sidebar.highestPrice = highestPrice;
+        }
+
         return {
             products,
             totalProducts: a,
             skip,
             limit,
-            sideBar: {
-                genders: Array.from(genderSet),
-                brands: Array.from(brandSet),
-                subCategories: Array.from(subCategorySet),
-                lowestPrice: prices.length ? Math.min(...prices) : null,
-                highestPrice: prices.length ? Math.max(...prices) : null,
-                colors: Array.from(colorSet)
-            }
+            sideBar : sidebar
         };
     }
 
@@ -345,6 +372,7 @@ export class productDao {
                 { brand: product.brand },
                 { category: product.category },
                 { subCategory: product.subCategory },
+                { gender : product.gender},
                 ],
             })
             .select('-variants')

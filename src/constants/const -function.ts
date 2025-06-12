@@ -10,9 +10,19 @@ export function buildLooseSearchRegex(term) {
   const letters = term.replace(/[^a-zA-Z0-9]/g, '').split('');
   // Build a pattern that allows optional hyphen or space between each letter
   const pattern = letters.map(l => escapeRegex(l)).join('[- ]*');
-  return new RegExp(pattern, 'i');
+  return new RegExp(`\\b${pattern}`, 'i');
 }
 
 function escapeRegex(string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export interface side {
+            brands : string[], 
+            categories : string[],
+            subCategories : string[],
+            genders : string[],
+            colors : string[],
+            lowestPrice : number,
+            highestPrice : number
 }
