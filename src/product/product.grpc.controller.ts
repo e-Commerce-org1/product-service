@@ -9,7 +9,7 @@ import {
   ProductFilter,
   Response,
   UpdateInventoryRequest
-} from '../proto/product';
+} from '../interfaces/helper.interface';
 
 @Controller()
 export class ProductGrpcController {

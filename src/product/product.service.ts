@@ -1,7 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Product } from './schema/product.schema';
 import { productDao } from './dao/product.dao';
-import { CreateProductRequest, UpdateProductRequest, UpdateInventoryRequest,} from '../proto/product';
+import { CreateProductRequest, UpdateProductRequest, UpdateInventoryRequest,} from 'src/interfaces/helper.interface';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { FilterProductsDto } from './dto/filter-products.dto';
