@@ -1,22 +1,41 @@
 import { Controller, Post, Body, Param, Get } from '@nestjs/common';
 import { ReviewsService } from './review.service';
 import { CreateReviewDto } from './dto/review.dto';
+import { ApiOperation } from '@nestjs/swagger';
 
 @Controller('products/reviews/:productId')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  @Post()
+  @Post('/')
+  @ApiOperation({ summary: 'Add review for the product' })
   async create(
     @Param('productId') productId: string,
     @Body() createReviewDto: CreateReviewDto,
   ) {
-    return this.reviewsService.createReview(productId, createReviewDto);
+    try{
+      return this.reviewsService.createReview(productId, createReviewDto);
+    } catch( error ){
+      return {
+        code : 404,
+        message: "Product Not Found"
+      }
+    }
+    
   }
 
-  @Get()
+  @Get('/')
+  @ApiOperation({ summary: 'Get all the reviews of specific product' })
   async findAll(@Param('productId') productId: string) {
-    return this.reviewsService.getProductReviews(productId);
+    try {
+      return this.reviewsService.getProductReviews(productId);
+    } catch (error) {
+      return {
+        code : 404,
+        message: "Product Not Found"
+      }
+    }
+    
   }
 }
 

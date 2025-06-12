@@ -4,7 +4,7 @@ import { Model, Types } from "mongoose";
 import { Product } from "src/product/schema/product.schema";
 import { Variant } from "src/product/schema/variant.schema";
 import { CreateProductRequest, UpdateInventoryRequest, UpdateProductRequest } from "src/proto/product";
-import { toArray } from "src/constants/const -function";
+import { buildLooseSearchRegex, toArray } from "src/constants/const -function";
 import { FilterProductsDto } from "../dto/filter-products.dto";
 import { GrpcAppException } from "src/filters/GrpcAppException";
 import { AppException } from "src/filters/AppException";
@@ -44,6 +44,8 @@ export class productDao {
         const updatePayload: any = {
             ...(data.name && { name: data.name }),
             ...(data.category && { category: data.category }),
+            ...(data.subCategory && { subCategory: data.subCategory}),
+            ...(data.gender && { gender: data.gender}),
             ...(data.brand && { brand: data.brand }),
             ...(data.imageUrl && { imageUrl: data.imageUrl }),
             ...(data.description && { description: data.description }),
@@ -181,17 +183,20 @@ export class productDao {
 
     // Http Request Logic
     async filterProducts(searchTerm: string, filterDto: FilterProductsDto) {
-        const { category, subCategory, brand } = filterDto;
-        // console.log(searchTerm);
+        const { category, subCategory, brand, page = 1, color, gender, price, sort } = filterDto;
+
+        const limit = 10;
+        const skip = (+page - 1) * limit;
         // Base query for searchTerm
-        const searchRegex = new RegExp(searchTerm, 'i');
+        const searchRegex = buildLooseSearchRegex(searchTerm);
         const baseQuery = {
             $or: [
                 { name: searchRegex },
                 { brand: searchRegex },
                 { category: searchRegex },
                 { subCategory: searchRegex },
-                { description: searchRegex}
+                { description: searchRegex},
+                { gender : searchRegex }
             ]
         };
 
@@ -226,13 +231,57 @@ export class productDao {
             }
         }
 
+        if (gender) {
+            additionalFilters.gender = { $regex: gender, $options: 'i'}
+        }
+
+        const p = price?.split(",").map(Number);
+        if (p && Array.isArray(p) && p.length === 2) {
+            additionalFilters.price = {
+                $gte: p[0],
+                $lte: p[1]
+            };
+        }
+
+        // Color filter inside variants
+        if (color) {
+            additionalFilters['variants.color'] = {
+                $regex: color,
+                $options: 'i'
+            };
+        }
+
+        const sortOptions: any = {};
+        switch(sort) {
+            case 'rating':
+                sortOptions.averageRating = -1;
+                break;
+            case 'price_asc':
+                sortOptions.price = 1;
+                break;
+            case 'price_desc':
+                sortOptions.price = -1;
+                break;
+            case 'new':
+                sortOptions.createdAt = -1;
+                break;
+            default:
+                sortOptions.createdAt = -1; // Default sort by newest
+        }
+
         // Combined query
         const finalQuery = { ...baseQuery, ...additionalFilters };
 
-        // Fetch filtered products
-        const products = await this.productModel.find(finalQuery)
-            .populate('variants')
-            .lean();
+        // Get paginated products
+        const [products, total] = await Promise.all([
+            this.productModel.find(finalQuery)
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(limit)
+                .populate('variants')
+                .lean(),
+            this.productModel.countDocuments(finalQuery)
+        ]);
 
         // Fetch base results for sidebar metadata
         const allSearchResults = await this.productModel.find(baseQuery)
@@ -244,12 +293,14 @@ export class productDao {
         const subCategorySet = new Set<string>();
         const prices: number[] = [];
         const colorSet = new Set<string>();
+        const genderSet = new Set<string>();
 
         for (const product of allSearchResults) {
             if (product.brand) brandSet.add(product.brand);
             if (product.subCategory) subCategorySet.add(product.subCategory);
             if (product.price) prices.push(product.price);
-            
+            if (product.gender) genderSet.add(product.gender);
+
             if (product.variants) {
                 product.variants.forEach(variant => {
                     if (variant.color) colorSet.add(variant.color);
@@ -257,10 +308,18 @@ export class productDao {
             }
         }
 
+        let a = allSearchResults.length;
+        if(category || subCategory || brand || color || gender || price){
+            a = products.length;
+        }
+
         return {
             products,
-            totalProducts: products.length,
+            totalProducts: a,
+            skip,
+            limit,
             sideBar: {
+                genders: Array.from(genderSet),
                 brands: Array.from(brandSet),
                 subCategories: Array.from(subCategorySet),
                 lowestPrice: prices.length ? Math.min(...prices) : null,

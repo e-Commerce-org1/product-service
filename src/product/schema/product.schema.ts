@@ -17,6 +17,9 @@ export class Product extends Document {
   @Prop({ required: true, index: true })
   brand: string;
 
+  @Prop({ index: true })
+  gender: string;
+
   @Prop({ required: true })
   imageUrl: string;
 

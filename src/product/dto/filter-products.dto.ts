@@ -17,6 +17,26 @@ export class FilterProductsDto {
   @IsString()
   brand?: string;
 
+  @IsOptional()
+  @IsString()
+  color?: string;
+
+  @IsOptional()
+  @IsString()
+  page: number;
+
+  @IsOptional()
+  @IsString()
+  gender?: string;
+
+  @IsOptional()
+  @IsString()
+  price?: string;
+
+  @IsOptional()
+  @IsString()
+  sort?: string;
+
   @ApiPropertyOptional({ description: 'Search by product name (partial match)' })
   @IsOptional()
   @IsString()
