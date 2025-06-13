@@ -372,7 +372,6 @@ export class productDao {
                 { brand: product.brand },
                 { category: product.category },
                 { subCategory: product.subCategory },
-                { gender : product.gender},
                 ],
             })
             .select('-variants')
