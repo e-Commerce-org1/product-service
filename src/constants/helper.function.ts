@@ -6,14 +6,15 @@ export const toArray = (value: any): string[] => {
   return [];
 }
 
-export function buildLooseSearchRegex(term : string) {
+export function buildLooseSearchRegex(term: string) {
   const letters = term.replace(/[^a-zA-Z0-9]/g, '').split('');
-  const pattern = letters.map(l => escapeRegex(l)).join('[- ]*');
+  const pattern = letters.map(l => escapeRegex(l)).join('[-\' ]*');
+  const finalPattern = `\\b${pattern}('?s?)?`;
 
-  return new RegExp(`\\b${pattern}`, 'i');
+  return new RegExp(finalPattern, 'i');
 }
 
-function escapeRegex(str : string) {
+function escapeRegex(str: string) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 

@@ -9,6 +9,7 @@ service ProductService {
   rpc ListProducts (ProductFilter) returns (Response);
   rpc DeleteProduct (ProductID) returns (Response);
   rpc UpdateInventory (UpdateInventoryRequest) returns (Response);
+  rpc UpdateInventoryByOrder (UpdateInventoryByOrderRequest) returns (Response);
 }
 
 message Response {
@@ -68,4 +69,16 @@ message ProductFilter {
 message UpdateInventoryRequest {
   string productId = 1;
   repeated Variant variants = 2;
+}
+
+message UpdateInventoryByOrderRequest {
+  repeated InventoryChange items = 1;
+}
+
+message InventoryChange {
+  string productId = 1;
+  string size = 2;
+  string color = 3;
+  int32 quantity = 4;
+  bool increase = 5;
 }

@@ -21,21 +21,6 @@ export class ReviewsController {
         message: "Product Not Found"
       }
     }
-    
-  }
-
-  @Get('/')
-  @ApiOperation({ summary: 'Get all the reviews of specific product' })
-  async findAll(@Param('productId') productId: string) {
-    try {
-      return this.reviewsService.getProductReviews(productId);
-    } catch (error) {
-      return {
-        code : 404,
-        message: "Products Not Found"
-      }
-    }
-    
   }
 }
 

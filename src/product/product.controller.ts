@@ -3,6 +3,8 @@ import { ProductService } from './product.service';
 import { FilterProductsDto } from './dto/filter-products.dto';
 import { Types } from 'mongoose';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
+import { ERROR_MESSAGES, LOG_MESSAGES } from 'src/constants/app.constants';
+import { AppException } from 'src/filters/AppException';
 
 @ApiTags('Products')
 @Controller('products')
@@ -13,7 +15,7 @@ export class ProductController {
     @ApiOperation({ summary: 'Filter products by category, brand, subcategory, or name' })
     @ApiResponse({ status: 200, description: 'Filtered products with metadata' })
     async filterProducts(@Param('searchTerm') searchTerm: string, @Query() filterDto: FilterProductsDto) {
-        // console.log("Requested products");
+        
         return this.productService.filterProducts(searchTerm,filterDto);
     }
 
@@ -25,13 +27,13 @@ export class ProductController {
     async getProductDetails(@Param('id') id: string) {
         try{
             if (!Types.ObjectId.isValid(id)) {
-                throw new NotFoundException('Invalid product ID');
+                throw AppException.notFound(LOG_MESSAGES.PRODUCT_READ_FAILED)
             }
 
             return this.productService.getProductWithSimilar(id);
         }catch (error){
             return {
-                message: "Product not found",
+                message: ERROR_MESSAGES.PRODUCT_NOT_FOUND,
             }
         }
         

@@ -1,90 +1,53 @@
-import { Controller } from '@nestjs/common';
+import { Controller, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { ProductService } from './product.service';
-import { grpcService, grpcMethods } from '../constants/grpc.constants'
-import { 
+import {
+  grpcService,
+  grpcMethods,
+  MESSAGES,
+} from '../constants/grpc.constants';
+import {
   CreateProductRequest,
   UpdateProductRequest,
   ProductID,
   ProductFilter,
   Response,
-  UpdateInventoryRequest
+  UpdateInventoryRequest,
+  UpdateInventoryByOrderRequest,
 } from '../interfaces/helper.interface';
+import { ResponseHelper } from '../constants/response.helper';
 
 @Controller()
 export class ProductGrpcController {
   constructor(private readonly productService: ProductService) {}
 
-  // These routes are for the admin service
   @GrpcMethod(grpcService, grpcMethods.create)
   async createProduct(data: CreateProductRequest): Promise<Response> {
-    try{
+    try {
       const product = await this.productService.createProduct(data);
-
-      return {
-        code: 200,
-        status: 'success',
-        timestamp: Date.now().toString(),
-        data: JSON.stringify(product),
-        error: '',
-      };
-    }
-    catch (error){
-      return {
-        code: 404,
-        status: 'error',
-        timestamp: Date.now().toString(),
-        data: JSON.stringify(error.message),
-        error: 'Product not created something went wrong',
-      };
+      return ResponseHelper.success(product);
+    } catch (error) {
+      return ResponseHelper.error(error, MESSAGES.PRODUCT_NOT_CREATED);
     }
   }
 
   @GrpcMethod(grpcService, grpcMethods.update)
   async updateProduct(data: UpdateProductRequest): Promise<Response> {
-    try{
+    try {
       const product = await this.productService.updateProduct(data);
-
-      return {
-        code: 200,
-        status: 'success',
-        timestamp: Date.now().toString(),
-        data: JSON.stringify(product),
-        error: '',
-      };
-    } catch (error){
-
-      return {
-        code: 404,
-        status: 'error',
-        timestamp: Date.now().toString(),
-        data: JSON.stringify(error.message),
-        error: 'While updating something went wrong!',
-      };
+      return ResponseHelper.success(product);
+    } catch (error) {
+      return ResponseHelper.error(error, MESSAGES.PRODUCT_UPDATE_ERROR);
     }
   }
 
   @GrpcMethod(grpcService, grpcMethods.get)
   async getProduct(data: ProductID): Promise<Response> {
-    try{
+    try {
       const product = await this.productService.getProduct(data.id);
-
-      return {
-        code: 200,
-        status: 'success',
-        timestamp: Date.now().toString(),
-        data: JSON.stringify(product),
-        error: '',
-      };
+      return ResponseHelper.success(product);
     } catch (error) {
-
-      return {
-        code: 404,
-        status: 'error',
-        timestamp: Date.now().toString(),
-        data: JSON.stringify(error.message),
-        error: 'Product not found',
-      };
+      return ResponseHelper.error(error, MESSAGES.PRODUCT_NOT_FOUND);
     }
   }
 
@@ -92,65 +55,41 @@ export class ProductGrpcController {
   async listProducts(filter: ProductFilter): Promise<Response> {
     const result = await this.productService.listProducts(filter);
     const data = {
-       products: result.products,
-       total: result.total,
-       page: result.page || 1,
-       pageSize: result.pageSize || 10
-    }
-    return {
-      code: 200,
-      status: 'success',
-      timestamp: Date.now().toString(),
-      data: JSON.stringify(data),
-      error: '',
+      products: result.products,
+      total: result.total,
+      page: result.page || 1,
+      pageSize: result.pageSize || 10,
     };
+    return ResponseHelper.success(data);
   }
 
   @GrpcMethod(grpcService, grpcMethods.delete)
   async deleteProduct(data: { id: string }): Promise<Response> {
-    try{
-      const product = this.productService.deleteProduct(data);
-
-      return {
-        code: 200,
-        status: 'success',
-        timestamp: Date.now().toString(),
-        data: JSON.stringify(product),
-        error: '',
-      };
+    try {
+      const product = await this.productService.deleteProduct(data);
+      return ResponseHelper.success(product);
     } catch (error) {
-
-      return {
-        code: 404,
-        status: 'error',
-        timestamp: Date.now().toString(),
-        data: JSON.stringify(error.message),
-        error: 'Product not found or deleted',
-      };
+      return ResponseHelper.error(error, MESSAGES.PRODUCT_DELETE_ERROR);
     }
   }
 
   @GrpcMethod(grpcService, grpcMethods.updateVariants)
-  async updateVariants(data: UpdateInventoryRequest) {
+  async updateVariants(data: UpdateInventoryRequest): Promise<Response> {
     try {
-      const product =  this.productService.updateVariants(data);
-
-      return {
-        code: 200,
-        status: 'success',
-        timestamp: Date.now().toString(),
-        data: JSON.stringify(product),
-        error: '',
-      };
+      const product = await this.productService.updateVariants(data);
+      return ResponseHelper.success(product);
     } catch (error) {
+      return ResponseHelper.error(error, MESSAGES.VARIANT_UPDATE_ERROR);
+    }
+  }
 
-      return {
-        code: 404,
-        status: 'error',
-        timestamp: Date.now().toString(),
-        data: error.message,
-        error: 'While updating variants something went wrong!',
-      };
+  @GrpcMethod(grpcService, grpcMethods.updateInventory)
+  async updateInventory(data: UpdateInventoryByOrderRequest): Promise<Response> {
+    try {
+      const result = await this.productService.updateInventory(data);
+      return ResponseHelper.success(result);
+    } catch (error) {
+      return ResponseHelper.error(error, MESSAGES.INVENTORY_UPDATE_ERROR);
     }
   }
 }

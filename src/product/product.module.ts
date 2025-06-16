@@ -4,7 +4,7 @@ import { ProductGrpcController } from './product.grpc.controller';
 import { ProductService } from './product.service';
 import { Product, ProductSchema } from './schema/product.schema';
 import { Variant, VariantSchema } from './schema/variant.schema';
-import { productDao } from 'src/product/dao/product.dao';
+import { ProductDao } from 'src/product/dao/product.dao';
 import { ProductController } from './product.controller';
 
 @Module({
@@ -13,7 +13,7 @@ import { ProductController } from './product.controller';
     MongooseModule.forFeature([{ name: Variant.name, schema: VariantSchema }]),
   ],
   controllers: [ProductController,ProductGrpcController],
-  providers: [ProductService,productDao],
+  providers: [ProductService,ProductDao],
   exports: [MongooseModule.forFeature([{ name: Product.name, schema: ProductSchema }])]
 })
 export class ProductModule {}
