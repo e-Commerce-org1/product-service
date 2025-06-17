@@ -79,7 +79,15 @@ export class ProductDao {
     }
 
     // List All the product based on filter
-    async listProductsDao(filter: any): Promise<{ products: any[]; total: number }> {
+
+
+    /**
+     * @description this API is for somthing
+     * @res something 
+     * @req something
+     */
+
+    async listProductsDao(filter: ProductFilter): Promise<{ products: any[]; total: number }> {
         const page = Math.max(1, filter.page || 1);
         const pageSize = Math.max(1, filter.pageSize || 10);
 
