@@ -1,11 +1,7 @@
-import { Controller, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { ProductService } from './product.service';
-import {
-  grpcService,
-  grpcMethods,
-  MESSAGES,
-} from '../constants/grpc.constants';
+import { grpcService, grpcMethods, MESSAGES } from 'src/constants/grpc.constants';
 import {
   CreateProductRequest,
   UpdateProductRequest,
@@ -14,8 +10,8 @@ import {
   Response,
   UpdateInventoryRequest,
   UpdateInventoryByOrderRequest,
-} from '../interfaces/helper.interface';
-import { ResponseHelper } from '../constants/response.helper';
+} from 'src/interfaces/helper.interface';
+import { ResponseHelper } from 'src/constants/response.helper';
 
 @Controller()
 export class ProductGrpcController {

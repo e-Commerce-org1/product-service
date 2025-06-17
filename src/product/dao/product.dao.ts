@@ -3,7 +3,7 @@ import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Product } from "src/product/schema/product.schema";
 import { Variant } from "src/product/schema/variant.schema";
-import { CreateProductRequest, InventoryChange, side, UpdateInventoryRequest, UpdateProductRequest } from "src/interfaces/helper.interface";
+import { CreateProductRequest, InventoryChange, ProductFilter, side, UpdateInventoryRequest, UpdateProductRequest } from "src/interfaces/helper.interface";
 import { buildLooseSearchRegex, toArray } from "src/constants/helper.function";
 import { FilterProductsDto } from "../dto/filter-products.dto";
 import { GrpcAppException } from "src/filters/GrpcAppException";
@@ -34,16 +34,12 @@ export class ProductDao {
 
     // update the the product details
     async updateProductDao(data: UpdateProductRequest): Promise<Product> {
-        const updatePayload: any = {
-            ...(data.name && { name: data.name }),
-            ...(data.category && { category: data.category }),
-            ...(data.subCategory && { subCategory: data.subCategory}),
-            ...(data.gender && { gender: data.gender}),
-            ...(data.brand && { brand: data.brand }),
-            ...(data.imageUrl && { imageUrl: data.imageUrl }),
-            ...(data.description && { description: data.description }),
-            ...(data.price && { price: data.price })
-        };
+        const updatePayload: Partial<Product> = {};
+        const allowedFields = ['name', 'category', 'subCategory', 'gender', 'brand', 'imageUrl', 'description', 'price'];
+
+        for (const key of allowedFields) {
+            if (data[key] !== undefined) updatePayload[key] = data[key];
+        }
         const updatedProduct = await this.productModel.findByIdAndUpdate(
             data.id,
             { $set: updatePayload },
@@ -55,8 +51,7 @@ export class ProductDao {
         }
 
         if (data.variants && data.variants.length > 0) {
-            const productObjectId = new Types.ObjectId(data.id);
-            await this.variantModel.deleteMany({ productId: productObjectId });
+            await this.variantModel.deleteMany({ productId: updatedProduct._id });
 
             const variants = await Promise.all(
                 data.variants.map( v => this.variantModel.create({ ...v, productId: updatedProduct._id }))
@@ -73,6 +68,7 @@ export class ProductDao {
     async getProductDao(id: string): Promise<Product> {
         const product = await this.productModel.findById(id)
             .populate('variants')
+            .populate('reviews')
             .lean()
             .exec();
 
@@ -84,8 +80,8 @@ export class ProductDao {
 
     // List All the product based on filter
     async listProductsDao(filter: any): Promise<{ products: any[]; total: number }> {
-        const page = parseInt(filter.page, 10) || 1;
-        const pageSize = parseInt(filter.pageSize, 10) || 10;
+        const page = Math.max(1, filter.page || 1);
+        const pageSize = Math.max(1, filter.pageSize || 10);
 
         const orConditions: any[] = [];
         const allowedFields = ['brand', 'category', 'subCategory', 'name', 'size', 'color'];
@@ -395,7 +391,7 @@ export class ProductDao {
                 { subCategory: product.subCategory },
                 ],
             })
-            .select('-variants')
+            .populate('variants')
             .populate('reviews')
             .limit(10)
             .lean();

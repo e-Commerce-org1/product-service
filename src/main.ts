@@ -45,12 +45,12 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   // HTTP Server Setup
-  const httpPort = process.env.HTTP_PORT || 5000;
+  const httpPort = process.env.HTTP_PORT || 3000;
   await app.listen(httpPort);
   
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
   logger.log(`HTTP Server is running on: http://localhost:${httpPort}`, 'Bootstrap');
-  logger.log(`Swagger is running on: http://localhost:3000/api#`, 'Bootstrap');
+  logger.log(`Swagger is running on: http://localhost:${httpPort}/api#`, 'Bootstrap');
   logger.log(`gRPC Service is running on: ${grpcPort}`, 'Bootstrap');
   logger.log(`Database is connected to ${process.env.MONGODB_URI}`, 'Bootstrap');
 }

@@ -1,7 +1,7 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Product } from './schema/product.schema';
 import { ProductDao } from './dao/product.dao';
-import { CreateProductRequest, UpdateProductRequest, UpdateInventoryRequest, UpdateInventoryByOrderRequest,} from 'src/interfaces/helper.interface';
+import { CreateProductRequest, UpdateProductRequest, UpdateInventoryRequest, UpdateInventoryByOrderRequest, ProductFilter} from 'src/interfaces/helper.interface';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { FilterProductsDto } from './dto/filter-products.dto';
@@ -52,12 +52,21 @@ export class ProductService {
     
   }
 
-  async listProducts(filter: any) {
+  async listProducts(filter: ProductFilter) {
     try {
       this.logger.info(LOG_MESSAGES.PRODUCT_LIST_REQUESTED, {timestamp:  new Date().toISOString()});
-      const page = filter.page || 1;
-      const pageSize = filter.pageSize || 10;
-      const { products, total } = await this.productDao.listProductsDao(filter);
+      // Parse page and pageSize as numbers, with fallback defaults
+      console.log(filter);
+      const page = filter.page !== undefined ? Number(filter.page) : 1;
+      const pageSize = filter.pageSize !== undefined ? Number(filter.pageSize) : 10;
+
+      // Create a new filter object with correct types
+      const parsedFilter: ProductFilter = {
+        ...filter,
+        page,
+        pageSize,
+      };
+      const { products, total } = await this.productDao.listProductsDao(parsedFilter);
       return {
         products: products.map((product) => this.mapToResponse(product)),
         total,
@@ -124,7 +133,7 @@ export class ProductService {
 
   private mapToResponse(product: Product) {
     return {
-      id: product.id.toString(),
+      id: product.id,
       name: product.name,
       category: product.category,
       subCategory: product.subCategory,
@@ -135,7 +144,7 @@ export class ProductService {
       price: product.price,
       totalStock: product.totalStock,
       variants: (product.variants || []).map(v => ({
-        id: v.id.toString(),
+        id: v.id,
         size: v.size,
         color: v.color,
         stock: v.stock
