@@ -11,14 +11,11 @@ import { AllExceptionsFilter } from './filters/http-exception.filter';
 dotenv.config();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule,{
-    logger : WinstonModule.createLogger(winstonConfig)
+  const app = await NestFactory.create(AppModule, {
+    logger: WinstonModule.createLogger(winstonConfig)
   });
-
-  // cors enabled for frontend
   app.enableCors();
 
-  // gRPC microservice setup
   const grpcPort = process.env.GRPC_SERVER_URL;
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
@@ -28,26 +25,19 @@ async function bootstrap() {
       url: grpcPort
     }
   });
-
   await app.startAllMicroservices();
-
-  // Global Filters
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  // Swagger Setup
   const config = new DocumentBuilder()
     .setTitle('Product Service')
     .setDescription('API documentation for product service')
     .setVersion('1.0')
     .build();
-
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  // HTTP Server Setup
-  const httpPort = process.env.HTTP_PORT || 3000;
+  const httpPort = process.env.HTTP_PORT ?? 3000;
   await app.listen(httpPort);
-  
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
   logger.log(`HTTP Server is running on: http://localhost:${httpPort}`, 'Bootstrap');
   logger.log(`Swagger is running on: http://localhost:${httpPort}/api#`, 'Bootstrap');

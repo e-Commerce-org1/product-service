@@ -15,7 +15,7 @@ import { ResponseHelper } from 'src/constants/response.helper';
 
 @Controller()
 export class ProductGrpcController {
-  constructor(private readonly productService: ProductService) {}
+  constructor(private readonly productService: ProductService) { }
 
   @GrpcMethod(grpcService, grpcMethods.create)
   async createProduct(data: CreateProductRequest): Promise<Response> {

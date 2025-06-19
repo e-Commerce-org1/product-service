@@ -18,4 +18,4 @@ import { ReviewModule } from './review/review.module';
     ReviewModule
   ],
 })
-export class AppModule {}
+export class AppModule { }

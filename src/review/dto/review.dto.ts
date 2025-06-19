@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsNumber, Min, Max, Length } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateReviewDto {
   @ApiProperty({ description: 'Name of Reviewer' })

@@ -9,14 +9,14 @@ import { AppException } from 'src/filters/AppException';
 @Injectable()
 export class ReviewsService {
   constructor(
-    @InjectModel(Review.name) private reviewModel: Model<Review>,
-    @InjectModel(Product.name) private productModel: Model<Product>,
-  ) {}
+    @InjectModel(Review.name) private readonly reviewModel: Model<Review>,
+    @InjectModel(Product.name) private readonly productModel: Model<Product>,
+  ) { }
 
   async createReview(productId: string, createReviewDto: CreateReviewDto) {
     const product = await this.productModel.findById(productId);
-    if (!product){
-        throw AppException.notFound("Product Not Found during post review");
+    if (!product) {
+      throw AppException.notFound("Product Not Found during post review");
     }
 
     const review = new this.reviewModel({
@@ -33,10 +33,6 @@ export class ReviewsService {
     );
 
     return review;
-  }
 
-  async getProductReviews(productId: string) {
-    return this.reviewModel.find({ productId }).sort({ createdAt: -1 }).exec();
   }
 }
-

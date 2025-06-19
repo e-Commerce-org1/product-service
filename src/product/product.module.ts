@@ -12,8 +12,8 @@ import { ProductController } from './product.controller';
     MongooseModule.forFeature([{ name: Product.name, schema: ProductSchema }]),
     MongooseModule.forFeature([{ name: Variant.name, schema: VariantSchema }]),
   ],
-  controllers: [ProductController,ProductGrpcController],
-  providers: [ProductService,ProductDao],
+  controllers: [ProductController, ProductGrpcController],
+  providers: [ProductService, ProductDao],
   exports: [MongooseModule.forFeature([{ name: Product.name, schema: ProductSchema }])]
 })
-export class ProductModule {}
+export class ProductModule { }

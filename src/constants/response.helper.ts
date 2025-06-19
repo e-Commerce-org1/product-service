@@ -16,12 +16,12 @@ export class ResponseHelper {
   }
 
   static error(error: any, message: string, code = RESPONSE_CODES.NOT_FOUND, status = STATUS.ERROR): Response {
-    logger.error(message, error?.stack || error?.message || error);
+    logger.error(message, error?.stack ?? error?.message ?? error);
     return {
       code,
       status,
       timestamp: new Date().toString(),
-      data: JSON.stringify(error?.message || error),
+      data: JSON.stringify(error?.message ?? error),
       error: message,
     };
   }

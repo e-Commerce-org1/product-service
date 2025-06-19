@@ -15,7 +15,7 @@ export const winstonConfig: winston.LoggerOptions = {
         winston.format.timestamp(),
         nestWinstonModuleUtilities.format.nestLike('NestApp', {
           prettyPrint: true,
-        }) 
+        })
       ),
     }),
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),

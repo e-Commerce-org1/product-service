@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Product } from "src/product/schema/product.schema";
 import { Variant } from "src/product/schema/variant.schema";
-import { CreateProductRequest, InventoryChange, ProductFilter, side, UpdateInventoryRequest, UpdateProductRequest } from "src/interfaces/helper.interface";
+import { CreateProductRequest, InventoryChange, ProductFilter, Side, UpdateInventoryRequest, UpdateProductRequest } from "src/interfaces/helper.interface";
 import { buildLooseSearchRegex, toArray } from "src/constants/helper.function";
 import { FilterProductsDto } from "../dto/filter-products.dto";
 import { GrpcAppException } from "src/filters/GrpcAppException";
@@ -20,7 +20,7 @@ export class ProductDao {
 
     //  create product 
     async createProductDao(data: CreateProductRequest): Promise<Product> {
-        if (!data.subCategory) data.subCategory = data.category;
+        data.subCategory ??= data.category;
         const newProduct = new this.productModel(data);
         const variants = await Promise.all(
             data.variants.map(v =>
@@ -35,16 +35,25 @@ export class ProductDao {
     // update the the product details
     async updateProductDao(data: UpdateProductRequest): Promise<Product> {
         const updatePayload: Partial<Product> = {};
-        const allowedFields = ['name', 'category', 'subCategory', 'gender', 'brand', 'imageUrl', 'description', 'price'];
+        const allowedFields = ['name', 'category', 'subCategory', 'gender', 'brand', 'images', 'description', 'price'];
 
         for (const key of allowedFields) {
-            if (data[key] !== undefined) updatePayload[key] = data[key];
+            if (data[key] !== undefined) {
+                if (key === 'images' && data.images) {
+                    updatePayload[key] = data.images.map(img => ({
+                        url: img.url,
+                        isPrimary: img.isPrimary
+                    }));
+                } else {
+                    updatePayload[key] = data[key];
+                }
+            }
         }
         const updatedProduct = await this.productModel.findByIdAndUpdate(
             data.id,
             { $set: updatePayload },
             { new: true }
-        )
+        ).exec();
 
         if (!updatedProduct) {
             throw GrpcAppException.notFound(ERROR_MESSAGES.PRODUCT_NOT_FOUND);
@@ -54,12 +63,20 @@ export class ProductDao {
             await this.variantModel.deleteMany({ productId: updatedProduct._id });
 
             const variants = await Promise.all(
-                data.variants.map( v => this.variantModel.create({ ...v, productId: updatedProduct._id }))
+                data.variants.map(v => this.variantModel.create({ ...v, productId: updatedProduct._id }))
             )
 
             updatedProduct.totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
             updatedProduct.variants = variants;
             await updatedProduct.save();
+        }
+
+        if (updatePayload.images) {
+            const primaryCount = updatedProduct.images.filter(img => img.isPrimary).length;
+            if (primaryCount < 1) {
+                updatedProduct.images[0].isPrimary = true;
+                await updatedProduct.save();
+            }
         }
         return updatedProduct;
     }
@@ -69,7 +86,6 @@ export class ProductDao {
         const product = await this.productModel.findById(id)
             .populate('variants')
             .populate('reviews')
-            .lean()
             .exec();
 
         if (!product) {
@@ -78,9 +94,6 @@ export class ProductDao {
         return product;
     }
 
-    // List All the product based on filter
-
-
     /**
      * @description this API is for somthing
      * @res something 
@@ -88,8 +101,8 @@ export class ProductDao {
      */
 
     async listProductsDao(filter: ProductFilter): Promise<{ products: any[]; total: number }> {
-        const page = Math.max(1, filter.page || 1);
-        const pageSize = Math.max(1, filter.pageSize || 10);
+        const page = filter.page ?? 1;
+        const pageSize = filter.pageSize ?? 10;
 
         const orConditions: any[] = [];
         const allowedFields = ['brand', 'category', 'subCategory', 'name', 'size', 'color'];
@@ -127,20 +140,15 @@ export class ProductDao {
 
     // deleting the product with variants by id
     async deleteProductDao(id: string) {
-        try{
-            const productObjectId = new Types.ObjectId(id);
-            const exit = await this.productModel.exists({ _id: productObjectId });
-            if (!exit) {
-                throw GrpcAppException.notFound(ERROR_MESSAGES.PRODUCT_DELETE_NOT_FOUND);
-            }
-    
-            await this.variantModel.deleteMany({ productId: productObjectId });
-            const result = await this.productModel.findByIdAndDelete(id);
-            return result;
+        const productObjectId = new Types.ObjectId(id);
+        const exit = await this.productModel.exists({ _id: productObjectId });
+        if (!exit) {
+            throw GrpcAppException.notFound(ERROR_MESSAGES.PRODUCT_DELETE_NOT_FOUND);
         }
-        catch(error){
-            throw error
-        }
+
+        await this.variantModel.deleteMany({ productId: productObjectId });
+        const result = await this.productModel.findByIdAndDelete(id);
+        return result;
     }
 
     // Updating the stocks with productId
@@ -169,49 +177,41 @@ export class ProductDao {
         return product.save();
     }
 
+    // Hanlde inventory update from the order 
     async handleInventoryUpdate(items: InventoryChange[]): Promise<{ updated: string[]; failed: string[] }> {
-        const results :  { updated: string[]; failed: string[] } = {
+        const results: { updated: string[]; failed: string[] } = {
             updated: [],
             failed: []
         };
 
         for (const item of items) {
-            try {
-                const quantityDelta = item.increase ? item.quantity : -item.quantity;
-                
-                // 1. Update Variant
-                const variantFilter: any = {
-                    productId: new Types.ObjectId(item.productId),
-                    size: item.size,
-                    color: item.color
-                };
+            const quantityDelta = item.increase ? item.quantity : -item.quantity;
+            // 1. Update Variant
+            const variantFilter: any = {
+                productId: new Types.ObjectId(item.productId),
+                size: item.size,
+                color: item.color
+            };
 
-                // Prevent negative stock for decrement operations
-                if (!item.increase) {
-                    variantFilter.stock = { $gte: item.quantity };
-                }
+            // Prevent negative stock for decrement operations
+            if (!item.increase) variantFilter.stock = { $gte: item.quantity };
 
-                const updatedVariant = await this.variantModel.findOneAndUpdate(
-                    variantFilter,
-                    { $inc: { stock: quantityDelta } },
-                    { new: true }
-                );
+            const updatedVariant = await this.variantModel.findOneAndUpdate(
+                variantFilter,
+                { $inc: { stock: quantityDelta } },
+                { new: true }
+            );
 
-                if (!updatedVariant) {
-                    results.failed.push(item.productId);
-                    continue;
-                }
-
-                // 2. Update Product's totalStock
-                await this.productModel.findByIdAndUpdate(
-                    item.productId,
-                    { $inc: { totalStock: quantityDelta } }
-                );
-
-                results.updated.push(item.productId);
-            } catch (error) {
+            if (!updatedVariant) {
                 results.failed.push(item.productId);
+                continue;
             }
+            // 2. Update Product's totalStock
+            await this.productModel.findByIdAndUpdate(
+                item.productId,
+                { $inc: { totalStock: quantityDelta } }
+            );
+            results.updated.push(item.productId);
         }
 
         return results;
@@ -242,37 +242,46 @@ export class ProductDao {
         }
 
         // Helper to build additional filters
-        const buildAdditionalFilters = (excludeKey?: string) => {
-            const filters: any = {};
-            if (category && excludeKey !== 'category') {
-                filters.category = { $regex: category, $options: 'i' };
-            }
-            if (subCategory && excludeKey !== 'subCategory') {
-                if (Array.isArray(subCategory)) {
-                    filters.subCategory = { $in: subCategory.map(val => new RegExp(val, 'i')) };
-                } else {
-                    filters.subCategory = { $regex: subCategory, $options: 'i' };
+        interface Filter {
+            [key: string]: any;
+        }
+
+        const buildAdditionalFilters = (excludeKey?: string): Filter => {
+            const filters: Filter = {};
+
+            const addRegexFilter = (key: string, value: string, exactMatch = false) => {
+                if (value && excludeKey !== key) {
+                    filters[key] = {
+                        $regex: exactMatch ? `^${value}$` : value,
+                        $options: 'i',
+                    };
+                }
+            };
+
+            const addArrayRegexFilter = (key: string, value: string | string[]) => {
+                if (value && excludeKey !== key) {
+                    filters[key] = Array.isArray(value)
+                        ? { $in: value.map(val => new RegExp(val, 'i')) }
+                        : { $regex: value, $options: 'i' };
+                }
+            };
+
+            if (category) addRegexFilter('category', category);
+            if (subCategory) addArrayRegexFilter('subCategory', subCategory);
+            if (brand) addArrayRegexFilter('brand', brand);
+            if (gender) addRegexFilter('gender', gender, true);
+            if (color) addArrayRegexFilter('variants.color', color);
+
+            if (price && excludeKey !== 'price') {
+                const [min, max] = price.split(',').map(Number);
+                if (min >= 0 && max >= min) {
+                    filters.price = { $gte: min, $lte: max };
                 }
             }
-            if (brand && excludeKey !== 'brand') {
-                if (Array.isArray(brand)) {
-                    filters.brand = { $in: brand.map(val => new RegExp(val, 'i')) };
-                } else {
-                    filters.brand = { $regex: brand, $options: 'i' };
-                }
-            }
-            if (gender && excludeKey !== 'gender') {
-                filters.gender = { $regex: `^${gender}$`, $options: 'i' };
-            }
-            const p = price?.split(",").map(Number);
-            if (p && Array.isArray(p) && p.length === 2 && excludeKey !== 'price') {
-                filters.price = { $gte: p[0], $lte: p[1] };
-            }
-            if (color && excludeKey !== 'color') {
-                filters['variants.color'] = { $regex: new RegExp(color, 'i') };
-            }
+
             return filters;
         };
+
 
         // Sorting options
         const sortOptions: any = {};
@@ -356,7 +365,7 @@ export class ProductDao {
         const highestPrice = prices.length ? Math.max(...prices) : null;
 
         // Only include sidebar fields if not filtered and more than one value
-        const sidebar: side = {
+        const sidebar: Side = {
             brands: brands.length > 1 ? brands : [],
             categories: categories.length > 1 ? categories : [],
             subCategories: subCategories.length > 1 ? subCategories : [],
@@ -377,7 +386,7 @@ export class ProductDao {
             totalProducts: a,
             skip,
             limit,
-            sideBar : sidebar
+            sideBar: sidebar
         };
     }
 
@@ -390,15 +399,14 @@ export class ProductDao {
             throw AppException.notFound(ERROR_MESSAGES.PRODUCT_NOT_FOUND);
         }
 
-        // Find similar products by brand, category, or subcategory (excluding the current product)
         const similarProducts = await this.productModel.find({
             _id: { $ne: product._id },
             $or: [
                 { brand: product.brand },
                 { category: product.category },
                 { subCategory: product.subCategory },
-                ],
-            })
+            ],
+        })
             .populate('variants')
             .populate('reviews')
             .limit(10)

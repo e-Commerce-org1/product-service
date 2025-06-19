@@ -6,13 +6,18 @@ export interface Response {
   error: string;
 }
 
+export interface ProductImage {
+  url: string;
+  isPrimary: boolean;
+}
+
 export interface CreateProductRequest {
   name: string;
   category: string;
-  subCategory?: string | undefined;
-  gender?: string | undefined;
+  subCategory?: string;
+  gender?: string;
   brand: string;
-  imageUrl: string;
+  images: ProductImage[];
   description: string;
   price: number;
   totalStock: number;
@@ -21,14 +26,14 @@ export interface CreateProductRequest {
 
 export interface UpdateProductRequest {
   id: string;
-  name?: string | undefined;
-  category?: string | undefined;
-  subCategory?: string | undefined;
-  gender?: string | undefined;
-  brand?: string | undefined;
-  imageUrl?: string | undefined;
-  description?: string | undefined;
-  price?: number | undefined;
+  name?: string;
+  category?: string;
+  subCategory?: string;
+  gender?: string;
+  brand?: string;
+  images: ProductImage[];
+  description?: string;
+  price?: number;
   variants: Variant[];
 }
 
@@ -43,13 +48,13 @@ export interface ProductID {
 }
 
 export interface ProductFilter {
-  page?: number | undefined;
-  pageSize?: number | undefined;
-  category?: string | undefined;
-  brand?: string | undefined;
-  subCategory?: string | undefined;
-  name?: string | undefined;
-  gender?: string | undefined;
+  page?: number;
+  pageSize?: number;
+  category?: string;
+  brand?: string;
+  subCategory?: string;
+  name?: string;
+  gender?: string;
 }
 
 export interface UpdateInventoryRequest {
@@ -57,14 +62,14 @@ export interface UpdateInventoryRequest {
   variants: Variant[];
 }
 
-export interface side {
-  brands : string[], 
-  categories : string[],
-  subCategories : string[],
-  genders : string[],
-  colors : string[],
-  lowestPrice : number,
-  highestPrice : number
+export interface Side {
+  brands: string[],
+  categories: string[],
+  subCategories: string[],
+  genders: string[],
+  colors: string[],
+  lowestPrice: number,
+  highestPrice: number
 }
 
 export interface UpdateInventoryByOrderRequest {

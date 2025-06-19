@@ -3,6 +3,14 @@ import { Document, Types } from 'mongoose';
 import { Variant } from './variant.schema';
 import { Review } from 'src/review/schemas/review.schema';
 
+export class ProductImage {
+  @Prop({ required: true })
+  url: string;
+
+  @Prop({ default: false })
+  isPrimary: boolean;
+}
+
 @Schema({ timestamps: true })
 export class Product extends Document {
   @Prop({ required: true })
@@ -11,7 +19,7 @@ export class Product extends Document {
   @Prop({ required: true, index: true })
   category: string;
 
-  @Prop({required: true, index: true})
+  @Prop({ required: true, index: true })
   subCategory: string;
 
   @Prop({ required: true, index: true })
@@ -20,8 +28,12 @@ export class Product extends Document {
   @Prop({ index: true })
   gender: string;
 
-  @Prop({ required: true })
-  imageUrl: string;
+  @Prop({ 
+    type: [ProductImage], 
+    required: true, 
+    default: [] 
+  })
+  images: ProductImage[];
 
   @Prop({ required: true })
   description: string;
@@ -32,13 +44,13 @@ export class Product extends Document {
   @Prop({ default: 0, min: 0 })
   totalStock: number;
 
-  @Prop({ 
+  @Prop({
     type: [{ type: Types.ObjectId, ref: 'Variant' }],
     default: []
   })
   variants: Variant[];
 
-  @Prop({ 
+  @Prop({
     type: [{ type: Types.ObjectId, ref: 'Review' }],
     default: []
   })
