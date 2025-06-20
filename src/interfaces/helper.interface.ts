@@ -63,13 +63,13 @@ export interface UpdateInventoryRequest {
 }
 
 export interface Side {
-  brands: string[],
-  categories: string[],
-  subCategories: string[],
-  genders: string[],
-  colors: string[],
-  lowestPrice: number,
-  highestPrice: number
+  brands: string[];
+  categories: string[];
+  subCategories: string[];
+  genders: string[];
+  colors: string[];
+  lowestPrice: number;
+  highestPrice: number;
 }
 
 export interface UpdateInventoryByOrderRequest {

@@ -1,7 +1,11 @@
 import { Controller } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { ProductService } from './product.service';
-import { grpcService, grpcMethods, MESSAGES } from 'src/constants/grpc.constants';
+import {
+  grpcService,
+  grpcMethods,
+  MESSAGES,
+} from 'src/constants/grpc.constants';
 import {
   CreateProductRequest,
   UpdateProductRequest,
@@ -15,7 +19,7 @@ import { ResponseHelper } from 'src/constants/response.helper';
 
 @Controller()
 export class ProductGrpcController {
-  constructor(private readonly productService: ProductService) { }
+  constructor(private readonly productService: ProductService) {}
 
   @GrpcMethod(grpcService, grpcMethods.create)
   async createProduct(data: CreateProductRequest): Promise<Response> {
@@ -80,7 +84,9 @@ export class ProductGrpcController {
   }
 
   @GrpcMethod(grpcService, grpcMethods.updateInventory)
-  async updateInventory(data: UpdateInventoryByOrderRequest): Promise<Response> {
+  async updateInventory(
+    data: UpdateInventoryByOrderRequest,
+  ): Promise<Response> {
     try {
       const result = await this.productService.updateInventory(data);
       return ResponseHelper.success(result);

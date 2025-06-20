@@ -9,8 +9,8 @@ export const grpcMethods = {
   getList: 'ListProducts',
   delete: 'DeleteProduct',
   updateVariants: 'UpdateInventory',
-  updateInventory: 'UpdateInventoryByOrderRequest'
-}
+  updateInventory: 'UpdateInventoryByOrderRequest',
+};
 
 export const RESPONSE_CODES = {
   SUCCESS: 200,

@@ -12,7 +12,7 @@ dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
-    logger: WinstonModule.createLogger(winstonConfig)
+    logger: WinstonModule.createLogger(winstonConfig),
   });
   app.enableCors();
 
@@ -22,8 +22,8 @@ async function bootstrap() {
     options: {
       package: packageName,
       protoPath: join(__dirname, './proto/product.proto'),
-      url: grpcPort
-    }
+      url: grpcPort,
+    },
   });
   await app.startAllMicroservices();
   app.useGlobalFilters(new AllExceptionsFilter());
@@ -39,9 +39,18 @@ async function bootstrap() {
   const httpPort = process.env.HTTP_PORT ?? 3000;
   await app.listen(httpPort);
   const logger = app.get(WINSTON_MODULE_NEST_PROVIDER);
-  logger.log(`HTTP Server is running on: http://localhost:${httpPort}`, 'Bootstrap');
-  logger.log(`Swagger is running on: http://localhost:${httpPort}/api#`, 'Bootstrap');
+  logger.log(
+    `HTTP Server is running on: http://localhost:${httpPort}`,
+    'Bootstrap',
+  );
+  logger.log(
+    `Swagger is running on: http://localhost:${httpPort}/api#`,
+    'Bootstrap',
+  );
   logger.log(`gRPC Service is running on: ${grpcPort}`, 'Bootstrap');
-  logger.log(`Database is connected to ${process.env.MONGODB_URI}`, 'Bootstrap');
+  logger.log(
+    `Database is connected to ${process.env.MONGODB_URI}`,
+    'Bootstrap',
+  );
 }
 bootstrap();

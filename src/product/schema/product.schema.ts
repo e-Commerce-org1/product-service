@@ -28,10 +28,10 @@ export class Product extends Document {
   @Prop({ index: true })
   gender: string;
 
-  @Prop({ 
-    type: [ProductImage], 
-    required: true, 
-    default: [] 
+  @Prop({
+    type: [ProductImage],
+    required: true,
+    default: [],
   })
   images: ProductImage[];
 
@@ -46,13 +46,13 @@ export class Product extends Document {
 
   @Prop({
     type: [{ type: Types.ObjectId, ref: 'Variant' }],
-    default: []
+    default: [],
   })
   variants: Variant[];
 
   @Prop({
     type: [{ type: Types.ObjectId, ref: 'Review' }],
-    default: []
+    default: [],
   })
   reviews: Review[];
 }

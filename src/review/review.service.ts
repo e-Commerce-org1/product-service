@@ -11,12 +11,12 @@ export class ReviewsService {
   constructor(
     @InjectModel(Review.name) private readonly reviewModel: Model<Review>,
     @InjectModel(Product.name) private readonly productModel: Model<Product>,
-  ) { }
+  ) {}
 
   async createReview(productId: string, createReviewDto: CreateReviewDto) {
     const product = await this.productModel.findById(productId);
     if (!product) {
-      throw AppException.notFound("Product Not Found during post review");
+      throw AppException.notFound('Product Not Found during post review');
     }
 
     const review = new this.reviewModel({
@@ -29,10 +29,9 @@ export class ReviewsService {
     await this.productModel.findByIdAndUpdate(
       productId,
       { $push: { reviews: review._id } },
-      { new: true }
+      { new: true },
     );
 
     return review;
-
   }
 }

@@ -58,7 +58,11 @@ export class AppException {
     });
   }
 
-  static custom(statusCode: HttpStatus, message: string, error: string = 'Error') {
+  static custom(
+    statusCode: HttpStatus,
+    message: string,
+    error: string = 'Error',
+  ) {
     return new HttpException(
       {
         statusCode,

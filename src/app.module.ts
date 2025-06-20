@@ -6,7 +6,6 @@ import { WinstonModule } from 'nest-winston';
 import { winstonConfig } from './logger/winston.logger';
 import { ReviewModule } from './review/review.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -15,7 +14,7 @@ import { ReviewModule } from './review/review.module';
     WinstonModule.forRoot(winstonConfig),
     DatabaseModule,
     ProductModule,
-    ReviewModule
+    ReviewModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

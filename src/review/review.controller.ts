@@ -5,7 +5,7 @@ import { ApiOperation } from '@nestjs/swagger';
 
 @Controller('products/reviews/:productId')
 export class ReviewsController {
-  constructor(private readonly reviewsService: ReviewsService) { }
+  constructor(private readonly reviewsService: ReviewsService) {}
 
   @Post('/')
   @ApiOperation({ summary: 'Add review for the product' })
@@ -14,7 +14,5 @@ export class ReviewsController {
     @Body() createReviewDto: CreateReviewDto,
   ) {
     return this.reviewsService.createReview(productId, createReviewDto);
-
   }
 }
-

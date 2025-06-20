@@ -46,7 +46,9 @@ export class FilterProductsDto {
   @Transform(({ value }) => value.trim())
   sort?: string;
 
-  @ApiPropertyOptional({ description: 'Search by product name (partial match)' })
+  @ApiPropertyOptional({
+    description: 'Search by product name (partial match)',
+  })
   @IsOptional()
   @IsString()
   @Transform(({ value }) => value.trim())

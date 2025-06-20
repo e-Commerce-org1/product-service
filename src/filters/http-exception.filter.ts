@@ -32,7 +32,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     }
 
-    const errorResponse = ErrorResponse.generate(status, message, errorType, request.url);
+    const errorResponse = ErrorResponse.generate(
+      status,
+      message,
+      errorType,
+      request.url,
+    );
     response.status(status).json(errorResponse);
   }
 }

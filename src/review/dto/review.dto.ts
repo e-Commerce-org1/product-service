@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsNumber, Min, Max, Length } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  Min,
+  Max,
+  Length,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -6,7 +13,9 @@ export class CreateReviewDto {
   @ApiProperty({ description: 'Name of Reviewer' })
   @IsString()
   @IsNotEmpty({ message: 'Reviewer name is required' })
-  @Length(2, 50, { message: 'Reviewer name must be between 2 and 50 characters' })
+  @Length(2, 50, {
+    message: 'Reviewer name must be between 2 and 50 characters',
+  })
   reviewerName: string;
 
   @ApiProperty({ description: 'Title of the review' })
@@ -18,7 +27,9 @@ export class CreateReviewDto {
   @ApiProperty({ description: 'Description of review' })
   @IsString()
   @IsNotEmpty({ message: 'Comment is required' })
-  @Length(10, 1000, { message: 'Comment must be between 10 and 1000 characters' })
+  @Length(10, 1000, {
+    message: 'Comment must be between 10 and 1000 characters',
+  })
   comment: string;
 
   @ApiProperty({ description: 'Rating of product' })
